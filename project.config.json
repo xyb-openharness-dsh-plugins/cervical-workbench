@@ -1,0 +1,18 @@
+{
+  "packageName": "@xyb-community/cervical-workbench",
+  "title": "小莲宝 CerviPal 宫颈癌工作台（品牌占位）",
+  "repository": "https://github.com/xyb-community/cervical-workbench",
+  "description": "本机优先的宫颈癌FIGO分期、生育保留、根治性放化疗与长期副作用、复诊准备工作台",
+  "slug": "cervical",
+  "targetUsers": "宫颈癌患者及照护者；含年轻患者生育保留与绝经管理需要",
+  "scenario": "FIGO临床分期决定手术或根治性放化疗路径；年轻患者生育保留手术选择与随访；放化疗后阴道狭窄、淋巴水肿、卵巢功能等长期副作用管理；HPV筛查史与家属预防沟通",
+  "completion": "得到来源可追溯、可核对的个人病程档案：FIGO分期档案、治疗路径记录、长期副作用与随访节奏、SCC-Ag趋势、复诊准备材料；所有候选信息经用户核对入档，不提供诊断与治疗建议",
+  "coreFlow": [
+    "选择本机资料目录并导入病理/影像/检验报告",
+    "核对候选信息，建立FIGO分期与病理档案",
+    "记录治疗路径与放疗长期副作用",
+    "整理SCC-Ag趋势与随访问隔",
+    "生成复诊准备材料"
+  ],
+  "layoutMode": "business-first"
+}
