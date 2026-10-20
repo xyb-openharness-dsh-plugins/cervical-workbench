@@ -14,13 +14,22 @@
   "files": [
     "dsh",
     "lib",
+    "public",
+    "schema",
     "assets",
     "cordis.patch.yml",
     "README.md",
-    "NOTICE.md"
+    "NOTICE.md",
+    "LICENSE"
   ],
   "scripts": {
-    "check": "node --check dsh/index.js && node --check lib/client.js && node scripts/check-workbench-package.mjs .",
+    "build:demo": "node --disable-warning=ExperimentalWarning demo/build-demo-data.mjs",
+    "check:syntax": "node scripts/check-syntax.mjs",
+    "check:schema": "node scripts/check-schema.mjs",
+    "check:wording": "node scripts/check-wording.mjs",
+    "check:columns": "node scripts/check-demo-columns.mjs",
+    "test": "node --disable-warning=ExperimentalWarning --test test/*.test.mjs",
+    "check": "node --disable-warning=ExperimentalWarning demo/build-demo-data.mjs && node scripts/check-syntax.mjs && node scripts/check-schema.mjs && node scripts/check-wording.mjs && node scripts/check-demo-columns.mjs && node --disable-warning=ExperimentalWarning --test test/*.test.mjs && node scripts/check-workbench-package.mjs .",
     "pack:check": "npm pack --dry-run"
   },
   "dsh": {

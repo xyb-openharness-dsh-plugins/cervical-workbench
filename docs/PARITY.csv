@@ -1,2 +1,20 @@
 id,原型版本与定位,原型内容或行为,当前实现,差异,偏离原因及依据,替代方案,组件与API,验收证据,状态
-EXAMPLE-ID,文件hash/Tab/模块,最近值→翻转→最近五次折线,待评估,待评估,无依据时视为实现缺口,待定,待定,未验证,待核对
+P-01,v0.2/看板,hero + 三段式顶栏 + 指标卡 + 最近的变化,prototypes/v0.2/app.js vDashboard,一致,—,—,—,截图 /tmp/cervical-dashboard.png,原型已实现
+P-02,v0.2/顶栏,左品牌+版本 chip / 中一句说明 / 右主操作组,index.html .topbar + #agent-toggle,一致,—,—,—,截图核对,原型已实现
+P-03,v0.2/AI 面板,五态按钮 + 三档宽度 + 提示词预览,app.js renderAgent + PAGE_CONTEXT,原生会话位仅占位,未接 DSH，宿主会话不可用,浏览器中退化为提示词预览,#dsh-conversation-slot,冒烟脚本 open=true / 提示词出文,部分（待 3.2）
+P-04,v0.2/病情整理,5 页签：资料库/草稿核对/档案/指标检测/汇总,app.js vRecords,一致,—,—,—,截图 /tmp/cervical-records.png,原型已实现
+P-05,v0.2/我的分期,FIGO 2018 只记录不自算（分期/体系/r-p/依据/原话/日期）,vStage + stage_rows,一致,—,—,—,单测「分期来自医生，不是工作台自算」,原型已实现
+P-06,v0.2/治疗历程,路径三选一 + 既往保留不覆盖（phase 当前/既往）,vTreatment + pathway_rows,一致,—,—,—,截图 /tmp/cervical-treatment.png,原型已实现
+P-07,v0.2/放疗疗程,外照射与后装分列，无总剂量,vTreatment 放疗页签 + rt_rows(mode),一致,—,—,—,单测「放疗分列 / 无 total_* 列」,原型已实现
+P-08,v0.2/性与生育,4 页签：生育档案/生育保留/卵巢与月经/性健康（私密）,vFertility + privateGate,私密折叠已实测,跨页残留已修（换页收回）,—,—,探针 gate=true 且折叠态无原文,原型已实现
+P-09,v0.2/放疗与长期影响,4 页签：放疗后事件/淋巴水肿/阴道与扩张/绝经与骨健康,vLate + privateGate,一致,—,—,—,截图 /tmp/cervical-late.png + 探针,原型已实现
+P-10,v0.2/检查与指标,标志物按病理分（SCC-Ag / CEA·CA125）+ 细胞学与 HPV 只存原文,vLabs + cytology_rows/hpv_rows(result_text),一致,—,—,—,单测「只存原文，无正常/异常列」,原型已实现
+P-11,v0.2/病情一图秀,3 序列归一化 + 分类只画节点 + 末点 13px 避让 + 事件竖虚线,vTimeline + chartSVG,一致,评估标签曾叠字，已改两行错位,同一天多个标记,标签按 x 错行,画布 CW980/CH420/CY0 132/CY1 366,截图 /tmp/cervical-timeline-A.png + DOM 断言,原型已实现
+P-12,v0.2/营养支持,进食量记录 + 补充剂与医嘱,vNutrition,一致,—,—,—,截图,原型已实现
+P-13,v0.2/心理支持,3 页签：当下感受/身体形象与亲密关系/母亲身份与家庭沟通,vMind（默认私密，不带原文）,一致,—,—,—,截图 + PAGE_CONTEXT 核对,原型已实现
+P-14,v0.2/复诊准备,复诊节奏/三类随访节点/筛查与预防/就诊准备,vReview,一致,—,—,—,截图,原型已实现
+P-15,v0.2/临床研究,14 条真实登记 + 13 个话题标签 + 入组问题清单,vTrials + trials 表,一致；不做适配判断,—,—,—,单测「条数与 nct_id 一致 + 有 last_verified」,原型已实现
+P-16,v0.2/字号,标准/大/超大 三档 --tz 倍率,index.html #font-toggle + style.css,一致,—,—,—,冒烟脚本三档无横向溢出,原型已实现
+P-17,v0.2/私密失效保护,私密内容不进 PAGE_CONTEXT 原文,vFertility/vLate 只写条数,一致,—,—,—,提示词预览文本核对,原型已实现
+P-18,开发版 public/,与原型逐视图一致（3.2 交付）,未开始,未实现,—,—,待 3.2 建 public/ + dsh/api + test/ui-parity,无,待开发
+P-19,DSH 装机,lib/client.js 在 Desktop 内加载,脚手架占位（描述符已同步本仓库地址）,未实机,—,—,待 M5,包检查 staticPass=true,待开发
