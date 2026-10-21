@@ -12,14 +12,20 @@
 | 渠道 | 本轮状态 | 说明 |
 | --- | --- | --- |
 | ClinicalTrials.gov（API v2） | **已采集** | 列表 + 单条详情都取了，原始响应留在 `research/cervical-cancer/` |
-| 国家药监局药物临床试验登记与信息公示平台 | **未采集** | 无公开 API，需人工检索；**本轮覆盖未知** |
-| 中国临床试验注册中心（ChiCTR） | **未采集** | 同上；**本轮覆盖未知** |
+| 国家药监局药物临床试验登记与信息公示平台 | **探测过 · 被 WAF 拦** | 脚本请求返回 HTTP 202（25 KB 挑战页，无登记锚点），判定不可采集；**本轮覆盖未知** |
+| 中国临床试验注册中心（ChiCTR） | **探测过 · 被 WAF 拦** | 脚本请求返回 HTTP 405（2.6 KB），判定不可采集；**本轮覆盖未知** |
 | WHO ICTRP | **未采集** | 聚合库，与上两项重叠 |
 | 会议摘要 / 药企管线页 | **未采集** | 只做登记信息，不引用未发表的疗效口径 |
 
 **所以：这 14 条不是"2026 年宫颈癌试验的全集"，只是 CT.gov 一个通道在窗口内的一个子集。**
 界面上的措辞固定为「2026 线索 · N 条 · 真实登记摘录，状态未核实」，
 不写「全部」「最新」「已穷尽」。
+
+> 两个国内平台不是"忘了查"，是**查过、拦住了**。`research/cervical-cancer/fetch-cn-registries.mjs`
+> 记录`{checkedAt, status, bytes, blockedReason, collectable:false}` 到
+> `research/cervical-cancer/cn-registry-attempt.json`，**只存判定，不复制站点内容**。
+> 想补这两块覆盖，只能人工检索后逐条手录（登记号、题目、状态、核对日期），
+> 不能把"脚本跑不通"写成"没有相关试验"。
 
 ## 二、抓取与筛选
 
@@ -74,6 +80,8 @@ node research/cervical-cancer/fetch-detail.mjs    # 读取 raw 里筛出的 NCT�
 # 3) 写回演示库与原型快照
 node demo/build-demo-data.mjs
 node scripts/check-demo-columns.mjs
+# 4) 复跑国内两个平台的"是否可采集"探测（退出码 0=可采集，3=都被拦）
+node research/cervical-cancer/fetch-cn-registries.mjs
 ```
 
 `trials` 表字段：`nct_id`（主键）/ `title` / `phase` / `status` / `sponsor` / `topic` / `last_verified` / `url`。

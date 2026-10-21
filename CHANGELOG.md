@@ -1,5 +1,82 @@
 # 变更记录
 
+## 2026-10-21 · 3.2 开发版（包版本 0.1.0）
+
+原型签认后补齐 3.1 明确未做的部分：开发版界面、读模型与接口、MinerU 真实解析、导出。
+`NODE_OPTIONS= npm run check` 全绿（43 条断言）。
+
+**开发版界面（`public/`）**
+
+- 新增 `public/{index.html, app.js, style.css, demo-data.js}`：12 个一级页与原型逐视图一致。
+  `style.css`、`demo-data.js` 与 `prototypes/v0.2/` **逐字节相同**；`index.html` 只改 `<title>`；
+  `app.js` 只换数据层（`apiBase` / `applyData` / `loadBootstrap` / `init` / `flushUploadQueue` / `uploadToWorkbench`），
+  DOM 渲染、页面表、档位、私密闸门一行未改。
+- 数据来源三态：`api`（接口可达）/ `demo`（接口不可达才回退）/ `empty`。页面标出来源，不静默造假数据。
+- 上传、保存导出、接受候选在 `api` 模式下走真实接口，不再只写内存。
+
+**读模型与接口（`dsh/`）**
+
+- 新增 `dsh/readmodels.js`：`getProfile(includePrivate)` 与原型快照**逐字段全等**（parity 断言）。
+- 新增 `dsh/demo.js`：`seedDemo` 幂等 + 整批事务 + 全显式列名；`SECTION_KEYS` 18 项与读模型同序。
+- 新增 `dsh/workbench.js`：`open()` 校验资料目录 → migrate → 空库才灌演示数据；`saveExport()` 落 `exports/`。
+- 新增 `dsh/routes.js`：路由表**唯一真身**（食管癌踩过"本地能开、装进 Desktop 就 404"），
+  含 `/health`（带 `capabilities`）、`/bootstrap`、`/profile/:key`、`/export/:key.md`（GET 下载 + POST 落盘）、
+  `/import`（30 MB 上限，超限 413）、`/candidate/:key/:id/accept`、`/ui/*`。
+  MinerU 的 `CODE` 翻成 502/503；`failure` 非空时除 `/health` 与 `/ui/*` 一律 503。
+- 重写 `dsh/index.js`：DSH 插件入口（`name` / `inject:['webServer','connection']` / `Config` / `apply`），
+  无 `root` 时退 `:memory:`；鉴权走 `ctx.connection.requestRejection`；`ctx.effect` 卸载时关库。
+- `dsh/server.js` 改为复用 `routes.js` 与 `public/`，独立启动与 Desktop 同一套接口。
+
+**MinerU 真实解析（`dsh/import.js`）**
+
+- 链路：`POST /file-urls/batch` → `PUT` 上传 → 轮询 → 下 zip 取 `full.md` + `*_content_list.json`。
+- 18 项字典指标 + 拉丁别名（前后否定断言，`\b` 对中文无效）；参考范围不当结果；
+  `<0.5` 保留原文且 `value_num=null`；`decodeEntities()` 还原 `&lt;0.5`；HTML `<table>` 先转成 `| a | b |`。
+- 只写 `documents` + `candidate_fields`（`status='待确认'`），**不碰事实层**；`accept` 只改状态。
+- 真实 PDF（8 KB / 1 页）实测：5 条候选、`skipped: []`、`documentId='A-D8'`。
+
+**导出（`dsh/export.js`）**
+
+- `renderPrepMarkdown()` 分节输出（最近指标 / 治疗经过 / 放疗分列 / 病理 / 长期影响 / 淋巴水肿 / 随访 /
+  影像 / 细胞学 / HPV / 本人关注 / 想问医生的问题），末尾固定「不是医生结论」。
+- **私密强制剔除**：即便请求带 `?private=1`，导出正文也没有 `vagina` / `sexual` 原文，只留一句「私密内容不包含」。
+- 文件名去分隔符；Markdown 落 `exports/`。
+
+**schema**
+
+- 新增 `schema/0002_profile_meta.sql`（1 表 3 列，`(profile_key,k)` 复合主键）：装"一档案一个值"的零散标量，
+  已知 `k='pathology_status'`。**以后加字段 = 加一行，不再 ALTER 补列**。sha256 已写入 `schema/freeze-contract.md`。
+
+**研究**
+
+- 新增 `research/cervical-cancer/fetch-cn-registries.mjs` + `cn-registry-attempt.json`：
+  药监局平台 `HTTP 202`（25 KB 挑战页）、ChiCTR `HTTP 405`（2.6 KB），判定 `collectable:false`，退出码 3。
+  只记判定不复制站点内容；两个平台的**覆盖仍然未知**，不写成"没有相关试验"。
+
+**测试（4 个文件 / 43 条断言）**
+
+- `test/store.test.mjs`（8）：migrate 幂等 / seedDemo 幂等 / parity（含私密原文）/ 读模型形状 / 库重开 / 口径 D / 18 分节序 / `profile_meta` 而非 `subjects` 列。
+- `test/server.test.mjs`（9）：health / bootstrap / 私密闸门 / 导出不含私密 / 保存导出落盘 / 静态文件与路径穿越 / JSON 404 / 导入失败要说清种类 / 目录校验。
+- `test/ui-parity.test.mjs`（7）：函数集不许丢 / 新增函数白名单 / 页面表与副标题一致 / 档位一致 / `style.css` 逐字节 / `index.html` 只差 `<title>` / 接口路径存在。
+- `test/import-export.test.mjs`（9）：单值抽取 / `<0.5` 留原文 / HTML 实体还原 / HTML 表格 / 日期不猜今天 / 只写候选 / accept 只改状态 / 导出不含私密 / 文件名去分隔符。
+
+**本轮现场修掉的错误**
+
+1. `table profile_meta already exists` —— 生成器 `DROP TABLE` 列表漏了新表。
+2. `TypeError: sectionRows[section] is not a function` —— `pathology` 是特殊形状，主循环加 `continue` 单独处理。
+3. parity 抖动：`screening_rows.note` 为 NULL 时多出第 4 元素 → 只出三元组；档案 B 激素为空给 `[]` 而快照是 `null` → 改 `null`。
+4. 导出拿不到私密标记：`source.profile()` 默认不含私密 → 取全量后手动置空并传 `excludedPrivate`。
+5. 导入抽不出候选：原实现"见分隔行就 continue"把表头一起跳过 → 改成按整块连续表格扫描。
+6. MinerU 返回 HTML 表格且 `<0.5` 被转义 → 加 `decodeEntities()`。
+7. `lib/version.js` 未生成 → `ERR_MODULE_NOT_FOUND`；默认频道改 `beta`（3.2 是开发版）。
+8. MinerU 不接受 `.md`（`code=-60002`）→ 测通路改用真实 PDF。
+9. `public/index.html` 多加了 `<link rel="icon" href="data:,">` → 原型已有内联 svg favicon，`ui-parity` ⑥ 会红，已删。
+
+**仍未做**
+
+- DSH Desktop 实机装机（`lib/client.js` 已按家族实证改成 `__ModuleLoader__` 包装的 React 组件，iframe 指向 `/api/cervical/ui/index.html`，标准分栏 `customFrame:false`；本机无 Desktop 会话，没装不算通过）。
+- 导出 PDF/DOCX、云端同步、真实患者访谈。
+
 ## 2026-10-21 · 3.1 阶段交付（包版本 0.1.0）
 
 调研 → schema → 临床数据 sqlite → 临床试验采集 → demo HTML 全链路打通，`npm run check` 全绿。

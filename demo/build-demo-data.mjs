@@ -747,7 +747,7 @@ DROP TABLE IF EXISTS cytology_rows; DROP TABLE IF EXISTS hpv_rows; DROP TABLE IF
 DROP TABLE IF EXISTS screening_rows; DROP TABLE IF EXISTS nutrition_rows; DROP TABLE IF EXISTS supplement_rows;
 DROP TABLE IF EXISTS viewpoints; DROP TABLE IF EXISTS trials; DROP TABLE IF EXISTS subjects;
 DROP TABLE IF EXISTS section_titles; DROP TABLE IF EXISTS demo_meta; DROP TABLE IF EXISTS documents;
-DROP TABLE IF EXISTS candidate_fields;
+DROP TABLE IF EXISTS candidate_fields; DROP TABLE IF EXISTS profile_meta;
 
 CREATE TABLE subjects (
   profile_key TEXT PRIMARY KEY, name TEXT, sex TEXT, age INTEGER, meta TEXT, headline TEXT,
@@ -793,6 +793,7 @@ CREATE TABLE trials (nct_id TEXT PRIMARY KEY, title TEXT, phase TEXT, status TEX
 CREATE TABLE documents (profile_key TEXT, id TEXT, name TEXT, date TEXT, type TEXT, status TEXT, ord INTEGER, PRIMARY KEY (profile_key, id));
 CREATE TABLE candidate_fields (profile_key TEXT, id TEXT, name TEXT, value TEXT, source TEXT, status TEXT, ord INTEGER, PRIMARY KEY (profile_key, id));
 CREATE TABLE demo_meta (k TEXT PRIMARY KEY, v TEXT);
+CREATE TABLE profile_meta (profile_key TEXT, k TEXT, v TEXT, PRIMARY KEY (profile_key, k));
 
 CREATE INDEX idx_points   ON metric_points (profile_key, metric_key);
 CREATE INDEX idx_stage    ON stage_rows    (profile_key, ord);
@@ -806,6 +807,8 @@ CREATE INDEX idx_docs     ON documents     (profile_key);
      dash_keys, path, activity, family_talk)
     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`);
   const insSectionTitle = db.prepare('INSERT INTO section_titles (profile_key, key, title, ord) VALUES (?,?,?,?)');
+  /* 档案级零散标量（schema/0002）：一个档案一个值的字段一律进这里，别再 ALTER 补列。 */
+  const insProfileMeta = db.prepare('INSERT INTO profile_meta (profile_key, k, v) VALUES (?,?,?)');
   const insMetric = db.prepare(`INSERT INTO metrics
     (profile_key, key, name, unit, cat, color, dec, kind, band_low, band_high, note)
     VALUES (?,?,?,?,?,?,?,?,?,?,?)`);
@@ -867,6 +870,7 @@ CREATE INDEX idx_docs     ON documents     (profile_key);
     p.cycles.forEach((c, i) => insCycle.run(k, c[0], c[1], c[2], c[3], c[4] ? 1 : 0, i));
     p.lines.forEach((l, i) => insLine.run(k, l.name, l.detail, l.done ? 1 : 0, i));
     if (p.figo) p.figo.rows.forEach((r, i) => insStage.run(k, r[0], r[1], r[2], i));
+    if (p.pathology) insProfileMeta.run(k, 'pathology_status', p.pathology.status ?? null);
     p.pathology.rows.forEach((r, i) => insPathology.run(k, 'row', r[0], r[1], i));
     p.pathology.gaps.forEach((r, i) => insPathology.run(k, 'gap', r[0], r[1], i));
     if (p.pathway) p.pathway.rows.forEach((r, i) => insPathway.run(k, r[0], r[1], r[2], r[3], r[4], i));

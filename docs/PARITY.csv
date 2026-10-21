@@ -1,7 +1,7 @@
 id,原型版本与定位,原型内容或行为,当前实现,差异,偏离原因及依据,替代方案,组件与API,验收证据,状态
 P-01,v0.2/看板,hero + 三段式顶栏 + 指标卡 + 最近的变化,prototypes/v0.2/app.js vDashboard,一致,—,—,—,截图 /tmp/cervical-dashboard.png,原型已实现
 P-02,v0.2/顶栏,左品牌+版本 chip / 中一句说明 / 右主操作组,index.html .topbar + #agent-toggle,一致,—,—,—,截图核对,原型已实现
-P-03,v0.2/AI 面板,五态按钮 + 三档宽度 + 提示词预览,app.js renderAgent + PAGE_CONTEXT,原生会话位仅占位,未接 DSH，宿主会话不可用,浏览器中退化为提示词预览,#dsh-conversation-slot,冒烟脚本 open=true / 提示词出文,部分（待 3.2）
+P-03,v0.2/AI 面板,五态按钮 + 三档宽度 + 提示词预览,app.js renderAgent + PAGE_CONTEXT,独立启动退化为提示词预览；Desktop 内由宿主原生会话承载（未实机）,宿主不允许插件自绘会话区，标准分栏下会话宽度也不可拖,Dev 内保留预览；装 Desktop 后交给宿主,lib/client.js 不 import 会话 API,冒烟脚本 open=true / 提示词出文,部分（待实机）
 P-04,v0.2/病情整理,5 页签：资料库/草稿核对/档案/指标检测/汇总,app.js vRecords,一致,—,—,—,截图 /tmp/cervical-records.png,原型已实现
 P-05,v0.2/我的分期,FIGO 2018 只记录不自算（分期/体系/r-p/依据/原话/日期）,vStage + stage_rows,一致,—,—,—,单测「分期来自医生，不是工作台自算」,原型已实现
 P-06,v0.2/治疗历程,路径三选一 + 既往保留不覆盖（phase 当前/既往）,vTreatment + pathway_rows,一致,—,—,—,截图 /tmp/cervical-treatment.png,原型已实现
@@ -16,5 +16,5 @@ P-14,v0.2/复诊准备,复诊节奏/三类随访节点/筛查与预防/就诊准
 P-15,v0.2/临床研究,14 条真实登记 + 13 个话题标签 + 入组问题清单,vTrials + trials 表,一致；不做适配判断,—,—,—,单测「条数与 nct_id 一致 + 有 last_verified」,原型已实现
 P-16,v0.2/字号,标准/大/超大 三档 --tz 倍率,index.html #font-toggle + style.css,一致,—,—,—,冒烟脚本三档无横向溢出,原型已实现
 P-17,v0.2/私密失效保护,私密内容不进 PAGE_CONTEXT 原文,vFertility/vLate 只写条数,一致,—,—,—,提示词预览文本核对,原型已实现
-P-18,开发版 public/,与原型逐视图一致（3.2 交付）,未开始,未实现,—,—,待 3.2 建 public/ + dsh/api + test/ui-parity,无,待开发
-P-19,DSH 装机,lib/client.js 在 Desktop 内加载,脚手架占位（描述符已同步本仓库地址）,未实机,—,—,待 M5,包检查 staticPass=true,待开发
+P-18,开发版 public/,与原型逐视图一致（3.2 交付）,public/ 四件（index.html、app.js、style.css、demo-data.js） + dsh/routes.js,index.html 仅改 title；style.css、demo-data.js 逐字节相同；app.js 只换数据层,原型是纯静态脚本，开发版要同源接 dsh 并反推宿主前缀，必须有 apiBase(),接口不可达才回退 demo-data；可达则只用库,app.js：apiBase/applyData/loadBootstrap/init/flushUploadQueue/uploadToWorkbench,test/ui-parity.test.mjs（7 条）+ test/server.test.mjs（9 条）+ 12 页无头浏览器冒烟 OVERFLOW none,已验证
+P-19,DSH 装机,lib/client.js 在 Desktop 内加载,ModuleLoader 包装的 React 组件，iframe → /api/cervical/ui/index.html；customFrame=false,未实机装 Desktop（本机无 Desktop 会话）,家族实证：ESM 入口会被 renderer 拒并触发 plugin-recovery,若 Desktop 内 iframe 被 CSP 拦，改 customFrame=true 直渲染,dsh/index.js + lib/client.js + cordis.patch.yml,check-workbench-package staticPass=true；装机签认待做,部分（待实机）

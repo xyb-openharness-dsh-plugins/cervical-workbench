@@ -4,18 +4,21 @@
 
 小莲宝（CerviPal）是面向宫颈癌患者及照护者的 DSH Desktop 本机优先工作台。它围绕 FIGO 2018 临床分期与治疗路径，重点记录生育保留、放疗长期影响（后装疗程、淋巴水肿、阴道狭窄、治疗诱导绝经）与随访节奏。医疗内容只用于资料整理和就诊沟通，不替代医生诊断或治疗意见。
 
-## 当前状态（v0.1.0 · 3.1 阶段已完成）
+## 当前状态（v0.1.0 · 3.2 开发版已可跑）
 
 | 阶段 | 状态 | 证据 |
 | --- | --- | --- |
 | 调研（SPEC / 场景 / 用户假设） | 完成 | `docs/SPEC.md`、`docs/SCENARIOS.md`、`docs/USER-RESEARCH.md`（如实标注「未做真实访谈」） |
-| 临床试验采集 | 完成（**单一通道**） | `research/cervical-cancer/` 158 条原始登记 → 14 条精筛；口径与**未采集渠道**见 `docs/CLINICAL-DATA-2026.md` |
-| 数据模型 | 完成，已冻结 | `schema/0001_initial.sql`（34 表 / 224 列）+ `schema/freeze-contract.md`（sha256） |
-| 演示数据 | 完成 | `demo/build-demo-data.mjs` → `demo/demo-data.sqlite` + `prototypes/v0.2/demo-data.js`（2 档案 / 37 指标 / 310 数据点 / 14 试验） |
-| 原型 demo | 完成 | `prototypes/v0.2/`（12 个一级页、三档字号、私密折叠、AI 面板五态） |
-| 检查链 | 全绿 | `npm run check`：语法 / 冻结合同 / 文案红线 / 列一致性 / 12 项单测 / 包结构 |
+| 临床试验采集 | 完成（**CT.gov 单一通道**） | `research/cervical-cancer/` 158 条原始登记 → 14 条精筛；国内两平台**已探测、被 WAF 拦**（HTTP 202 / 405），见 `docs/CLINICAL-DATA-2026.md` 与 `cn-registry-attempt.json` |
+| 数据模型 | 完成，已冻结 | `schema/0001_initial.sql`（34 表）+ `schema/0002_profile_meta.sql`（1 表 3 列）；sha256 见 `schema/freeze-contract.md` |
+| 演示数据 | 完成 | `demo/build-demo-data.mjs` → sqlite + 原型快照（2 档案 / 37 指标 / 310 数据点 / 14 试验 / 35 表 227 列） |
+| 原型 demo | 完成并签认 | `prototypes/v0.2/`（12 个一级页、三档字号、私密折叠、AI 面板五态） |
+| **开发版 `public/` + `dsh/` 接口** | **完成（3.2）** | `public/` 四件与原型逐视图 parity；`dsh/` 提供 bootstrap / profile / export / import / candidate；43 条断言全绿 |
+| **MinerU 真实解析** | **完成** | 真实 PDF 8 KB → 5 条候选（含 `<0.5`，HTML 表格已解码），只写候选、不碰事实层 |
+| **导出** | 完成（Markdown） | `GET /api/cervical/export/:key.md` 下载、`POST …/save` 落 `exports/`；**私密内容强制剔除** |
+| 检查链 | 全绿 | `npm run check`：语法 / 冻结合同 / 文案红线 / 列一致性 / 43 条单测 / 包结构 |
 
-**未做（如实）**：`public/` 开发版与 `dsh/` 读模型接口（3.2 阶段）；DSH Desktop 实机装机；MinerU 真实解析；导出；ChiCTR 与药监局登记平台采集（覆盖未知）。
+**仍未做（如实）**：DSH Desktop 实机装机（`lib/client.js` 已按家族实证改成 ModuleLoader 组件，但本机无 Desktop 会话，没装就不算通过）；导出 PDF/DOCX；云端同步；真实患者访谈。逐条落点见 `docs/DEV-REQUIREMENTS-2026-10-21.md` 第四节。
 
 ## 产品范围（一期）
 
@@ -38,13 +41,41 @@
 
 ```bash
 npm run build:demo   # 重新生成 demo-data.sqlite 与 demo-data.js（唯一数据源）
-npm run check        # 语法 → 冻结合同 → 文案红线 → 列一致性 → 单测 → 包结构
+npm run check        # 语法 → 冻结合同 → 文案红线 → 列一致性 → 43 条单测 → 包结构
 npm run pack:check   # npm 包内容检查，不发布
+
+# 独立启动（不装 Desktop 也能开）
+npm start -- --workspace ~/CerviPalWorkspace
+# → http://127.0.0.1:4199/api/cervical/ui/index.html
 ```
 
-原型是纯静态页，直接双击 `prototypes/v0.2/index.html`（file:// 只读，不写盘）。
+**MinerU Token 优先级**：显式传参 > 环境变量 `MINERU_TOKEN` > `.secrets/mineru.json`（600）。
+两者并存时**环境变量赢**；换 token 时先 `unset MINERU_TOKEN`，否则会以为文件没生效。
+MinerU 不接受 `.md`（`unsupported file type`），测通路请用真实 PDF。
 
-改数据层只有两条路：改 `demo/build-demo-data.mjs`，或**新增** `schema/0002_*.sql` 后把新文件与哈希追加到 `schema/freeze-contract.md`——改 `0001` 会被 `check-schema` 拦下。
+原型是纯静态页，直接双击 `prototypes/v0.2/index.html`（file:// 只读，不写盘）。
+开发版不能双击打开——它要同源调接口；接口不可达时才会回退 `demo-data.js` 演示数据（页面右下角标数据来源）。
+
+改数据层只有两条路：改 `demo/build-demo-data.mjs`，或**新增** `schema/0003_*.sql` 后把新文件与哈希追加到 `schema/freeze-contract.md`——改 `0001`/`0002` 会被 `check-schema` 拦下。
+
+## 架构（开发版）
+
+```
+dsh/index.js      DSH 插件入口（name / inject / Config / apply）
+  └ routes.js     路由表唯一真身（/health /bootstrap /profile /export /import /candidate /ui/*）
+      ├ workbench.js  可单测的 Workbench 类（open / bootstrap / getProfile / saveExport）
+      │   ├ store.js      openDatabase + migrate
+      │   ├ demo.js       seedDemo（幂等、整批事务）
+      │   ├ readmodels.js 读模型（含 private 闸门）
+      │   ├ import.js     MinerU 解析 → 候选字段
+      │   └ export.js     Markdown 渲染
+      └ server.js   独立启动（npm start），其余请求交给 public/
+public/           业务界面（与原型逐视图 parity，只换数据层）
+lib/client.js     宿主侧 ModuleLoader 组件（iframe → /api/cervical/ui/index.html）
+```
+
+`routes.js` **禁止 import Schemastery**：独立启动时该 peer 依赖不存在。
+`API_PREFIX='/api/cervical'`、`UI_PREFIX='/api/cervical/ui'` 只在 `routes.js` 定义，前端按 `location.pathname` 反推 `apiBase()`。
 
 ## 文档
 
@@ -55,7 +86,7 @@ npm run pack:check   # npm 包内容检查，不发布
 
 ## 版本
 
-当前开发版本 `0.1.0`：脚手架（xyb-workbench-starter v1.3.3）初始化 + 差异化 SPEC + 3.1 数据层与原型。变更随 CHANGELOG 记录。
+当前开发版本 `0.1.0`：3.1（SPEC + 数据层 + 原型签认）+ 3.2（`public/` 开发版 + `dsh/` 接口 + MinerU 真实解析 + 导出）。变更随 CHANGELOG 记录。
 
 ## 致谢
 

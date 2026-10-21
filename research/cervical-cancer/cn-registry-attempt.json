@@ -1,0 +1,26 @@
+{
+  "checkedAt": "2026-10-21T01:56:40.479Z",
+  "note": "这两个平台没有开放 API；本文件只记录\"查过、结果如何\"，不复制站点内容。",
+  "results": [
+    {
+      "id": "chinadrugtrials",
+      "name": "国家药监局药物临床试验登记与信息公示平台",
+      "url": "https://www.chinadrugtrials.org.cn/clinicaltrials.searchlist.dhtml?keywords=%E5%AE%AB%E9%A2%88%E7%99%8C",
+      "startedAt": "2026-10-21T01:56:40.087Z",
+      "status": 202,
+      "bytes": 25098,
+      "blockedReason": "HTTP 202",
+      "collectable": false
+    },
+    {
+      "id": "chictr",
+      "name": "中国临床试验注册中心（ChiCTR）",
+      "url": "https://www.chictr.org.cn/searchproj.html?title=%E5%AE%AB%E9%A2%88%E7%99%8C",
+      "startedAt": "2026-10-21T01:56:40.434Z",
+      "status": 405,
+      "bytes": 2657,
+      "blockedReason": "HTTP 405",
+      "collectable": false
+    }
+  ]
+}

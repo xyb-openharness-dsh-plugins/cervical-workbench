@@ -88,13 +88,37 @@
 
 ---
 
-## 四、本轮明确未做（不许在验收里算通过）
+## 四、本轮明确未做 → 3.2 补齐状态
 
-- `public/` 开发版与 `dsh/` 读模型 / 接口（3.2）。
-- DSH Desktop 装机、`lib/client.js` 实机加载。
-- MinerU 真实解析、导出 PDF/DOCX、云端同步。
-- 国家药监局药物临床试验登记平台与 ChiCTR 采集（无公开 API，覆盖未知，已在 `docs/CLINICAL-DATA-2026.md` 显式记录）。
-- 真实患者访谈（`docs/USER-RESEARCH.md` 仍写「未做真实访谈」）。
+> 3.1 签认时这一节写的是"不许在验收里算通过"。3.2 逐条补齐，**补齐情况按下表认定，不靠口头**。
+> 每条都给落点文件与可复跑的验收证据；没补齐的留在"仍未做"，不许含糊。
+
+| 项 | 3.2 状态 | 落点 | 验收证据 |
+| --- | --- | --- | --- |
+| `public/` 开发版（12 页 parity） | **已实现** | `public/{index.html,app.js,style.css,demo-data.js}` | `test/ui-parity.test.mjs` 7 条（函数集 / 页面表 / 档位 / `style.css` 逐字节 / `index.html` 只差 `<title>` / 接口路径）；12 页无头浏览器冒烟 `OVERFLOW none`、`CHART {paths:2,circles:18}`、`PRIVATE {leaked:false}` |
+| `dsh/` 读模型 | **已实现** | `dsh/readmodels.js`、`dsh/store.js`、`dsh/demo.js` | `test/store.test.mjs` 8 条，含 `getProfile(A/B,{includePrivate:true})` 与 `prototypes/v0.2/demo-data.js` **逐字段 `deepStrictEqual`** |
+| `dsh/` 接口（bootstrap / profile / export / import / candidate） | **已实现** | `dsh/routes.js`（唯一真身）、`dsh/index.js`（插件入口）、`dsh/server.js`（独立启动） | `test/server.test.mjs` 9 条；`/api/cervical/health` 返回 `capabilities:['bootstrap','profile','export','import','candidate']` |
+| 私密内容导出侧剔除 | **已实现** | `dsh/workbench.js#saveExport`、`dsh/export.js` | 即便 `?private=1`，导出正文仍无 `vagina/sexual` 原文，只留「私密内容不包含」一句；`test/server.test.mjs` ④/④b |
+| MinerU 真实解析 | **已实现** | `dsh/mineru.js`、`dsh/import.js` | 真实 PDF（8 KB / 1 页）解析出 5 条候选（含 `<0.5`），`skipped: []`；`test/import-export.test.mjs` 9 条（含 HTML 实体 `&lt;0.5` 还原、HTML 表格、日期不猜今天） |
+| 导出文件落盘 | **已实现**（Markdown） | `dsh/export.js#renderPrepMarkdown`、`POST /export/:key.md/save` | 落 `exports/`，文件名去分隔符；PDF/DOCX 见"仍未做" |
+| 国家药监局平台 / ChiCTR 采集 | **探测过，被 WAF 拦**（结论落地，不是"没做"） | `research/cervical-cancer/fetch-cn-registries.mjs` → `cn-registry-attempt.json` | 药监局 `HTTP 202`（25 KB 挑战页）、ChiCTR `HTTP 405`（2.6 KB），`collectable:false`；退出码 3。**覆盖仍然未知**，`docs/CLINICAL-DATA-2026.md` 已写明 |
+| DSH Desktop 实机装机 | **未做** | `lib/client.js` 已按家族实证改成 `__ModuleLoader__` 包装的 React 组件（iframe → `/api/cervical/ui/index.html`） | 只有 `check-workbench-package staticPass:true`；**本机无 Desktop 会话，没装机就不算通过**（P-19 仍标"部分"） |
+| 导出 PDF / DOCX | **未做** | — | 只出 Markdown；PDF/DOCX 需要额外渲染依赖，未纳入 3.2 |
+| 云端同步 | **未做** | — | 与"本机优先"口径冲突，不在 3.2 范围 |
+| 真实患者访谈 | **未做** | `docs/USER-RESEARCH.md` 仍写「未做真实访谈」 | — |
+
+### 4.1 3.2 现场新修的错误（供后续病种复用）
+
+1. `profile_meta already exists`：`build-demo-data.mjs` 的 `DROP TABLE` 列表漏了新表。
+2. `TypeError: sectionRows[section] is not a function`：`SECTION_KEYS` 含 `pathology`，但它是特殊形状、没有通用行取器 → 主循环加 `continue` 单独处理。
+3. parity 抖动 ①：`screening_rows.note` 为 `NULL` 时读模型多出第 4 个元素 → 只出三元组。
+4. parity 抖动 ②：档案 B 未用激素，读模型给 `[]` 而快照是 `null` → 空则 `null`。
+5. 导出拿不到私密标记：`source.profile()` 默认 `includePrivate:false`，`p.vagina || p.sexual` 恒假 → 取全量后手动置空并传 `excludedPrivate`。
+6. 导入抽不出候选：原实现"见分隔行就 `continue`"把表头一起跳过、整表静默丢弃 → 改成**按整块连续表格**扫描，先切 block、过滤分隔行，再取首行作表头。
+7. MinerU 返回的是 HTML `<table>`，`<0.5` 被转义成 `&lt;0.5`，不解码就当"文字"整行丢 → 加 `decodeEntities()`。
+8. `lib/version.js` 是生成物，没跑 `build-version.mjs` 时 `ERR_MODULE_NOT_FOUND`；3.2 起默认频道 `beta`（`CERVIPAL_CHANNEL`）。
+9. MinerU **不接受 `.md`**（`code=-60002 unsupported file type`）：测通路必须用真实 PDF。
+10. `public/index.html` 多加一行 `<link rel="icon" href="data:,">` → 原型已有内联 svg favicon，重复且 `ui-parity` ⑥ 会红。
 
 ## 五、按脚手架替你定的（默认执行，可回退）
 
