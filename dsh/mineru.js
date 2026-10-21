@@ -15,6 +15,13 @@ import { fileURLToPath } from 'node:url'
 import { readZip } from '../lib/zip.js'
 
 export const MINERU_BASE_URL = 'https://mineru.net/api/v4'
+/**
+ * 解析模型：统一口径默认 `pipeline`（2026-10-22）。
+ * 本仓原先不传 `model_version`、吃服务端默认值——那等于把口径交给上游，
+ * 换个账号或上游改默认就会漂；现在显式写死 pipeline。
+ * 调用方显式传 `modelVersion: 'vlm'` 仍可覆盖（压平表格用 vlm 还原更稳）。
+ */
+export const MINERU_MODEL_DEFAULT = 'pipeline'
 /** 本地私密文件：已进 .gitignore，不进包（package.json 的 files 不含 .secrets） */
 export const MINERU_SECRET_FILE = fileURLToPath(new URL('../.secrets/mineru.json', import.meta.url))
 
@@ -214,7 +221,7 @@ export class MineruClient {
    */
   async parse({
     bytes, filename, dataId = null, intervalMs = 3000, timeoutMs = 300000,
-    enableFormula = true, enableTable = true, language = 'ch', modelVersion = null, pageRanges = null,
+    enableFormula = true, enableTable = true, language = 'ch', modelVersion = MINERU_MODEL_DEFAULT, pageRanges = null,
   }) {
     if (!bytes || bytes.length === 0) throw new MineruError('BAD_INPUT', '文件内容为空，不提交解析')
     if (!filename?.trim()) throw new MineruError('BAD_INPUT', '缺少文件名（MinerU 按扩展名判类型）')
