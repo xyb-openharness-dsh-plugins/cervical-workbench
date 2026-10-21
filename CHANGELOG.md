@@ -1,5 +1,12 @@
 # 变更记录
 
+## 2026-10-21 · 装机目标更正（V2 前的准备）
+
+- **更正**：装机目录不是 `~/.dsh/profiles/desktop`（CLI 侧，Desktop 不读）。DSH Desktop 0.12.0 实际加载的是 app 自己的 Harness `~/Library/Application Support/dsh-desktop/harness/profiles/web`。
+- `scripts/check-install.mjs` 换成自动探测版（Desktop Harness → `DSH_HOME` → `~/.dsh`，打印判定依据，区分市场安装/手工安装）。
+- `scripts/build-version.mjs --check` 不再比较 `build` / `commit`（易变量），修掉每次提交后必失败的假阴性。
+
+
 ## 2026-10-21 · 3.2 开发版（包版本 0.1.0）
 
 原型签认后补齐 3.1 明确未做的部分：开发版界面、读模型与接口、MinerU 真实解析、导出。
