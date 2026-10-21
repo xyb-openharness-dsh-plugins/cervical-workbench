@@ -26,19 +26,20 @@
   "scripts": {
     "build:demo": "node --disable-warning=ExperimentalWarning demo/build-demo-data.mjs",
     "build:version": "node scripts/build-version.mjs",
+    "build:client": "node scripts/build-client.mjs",
     "check:syntax": "node scripts/check-syntax.mjs",
     "check:schema": "node scripts/check-schema.mjs",
     "check:wording": "node scripts/check-wording.mjs",
     "check:columns": "node scripts/check-demo-columns.mjs",
     "test": "node --disable-warning=ExperimentalWarning --test test/*.test.mjs",
-    "check": "node scripts/build-version.mjs && node --disable-warning=ExperimentalWarning demo/build-demo-data.mjs && node scripts/check-version.mjs && node scripts/check-syntax.mjs && node scripts/check-schema.mjs && node scripts/check-wording.mjs && node scripts/check-demo-columns.mjs && node --disable-warning=ExperimentalWarning --test test/*.test.mjs && node scripts/check-workbench-package.mjs .",
+    "check": "node scripts/build-version.mjs && node --disable-warning=ExperimentalWarning demo/build-demo-data.mjs && node scripts/check-version.mjs && node scripts/check-syntax.mjs && node scripts/check-schema.mjs && node scripts/check-wording.mjs && node scripts/check-demo-columns.mjs && node scripts/build-client.mjs --check && node --disable-warning=ExperimentalWarning --test test/*.test.mjs && node scripts/check-workbench-package.mjs .",
     "pack:check": "npm pack --dry-run",
     "start": "node --disable-warning=ExperimentalWarning scripts/dev-server.mjs",
     "dev": "node --disable-warning=ExperimentalWarning scripts/dev-server.mjs",
     "check:install": "node scripts/check-install.mjs",
     "check:version": "node scripts/check-version.mjs",
     "check:pack": "node --disable-warning=ExperimentalWarning scripts/check-pack.mjs",
-    "release:pack": "node scripts/build-version.mjs && npm pack --pack-destination release"
+    "release:pack": "node scripts/build-client.mjs && node scripts/build-version.mjs && npm pack --pack-destination release"
   },
   "dsh": {
     "bundle": {

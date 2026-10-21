@@ -1,5 +1,39 @@
 # 变更记录
 
+## 未发布 — 2026-10-22（面板改判 customFrame，修「装上去界面变形」）
+
+装机后用户截图反馈：业务区被拉满整幅、**顶栏没有 AI 对话按钮**、右侧会话区宽度拖不动。
+
+**根因不是漏接服务**：0.1.0 注册的是 `customFrame:false`（标准分栏）。标准分栏下宿主
+只把 `--workbench-business-width` 写成注册时的静态 CSS 值，服务里**没有**拖宽或关闭面板的
+编程接口——所以那条路上根本不存在"AI 按钮位"和"可拖分栏"。乳腺癌工作台走的是
+`customFrame:true`（宿主把原生会话节点作为 `conversation` prop 交给插件排版）。
+
+**做了什么**
+
+- `lib/layout.js`：`customFrame` false → true；顶部注释推翻旧结论并写清改判依据与代价。
+  `businessWidth` 保持 0.65（不取 0.7：会把会话区压到 30% 以下）。`AGENT_PANE` 补
+  `default / ratioStep / narrowBelowPx / drawerMaxPx`，并纳入 `assertPanelConfig()` 自检。
+- 新增 `src/client.js` + `scripts/build-client.mjs`：客户端入口改为**生成物**，面板参数、
+  接口前缀、版本、仓库都从唯一来源注入（以前是手写 50 行，参数要抄第二份）。`npm run check`
+  增加 `build-client.mjs --check`，改了来源忘了重新生成会红。
+- `lib/client.js` 重写：语义 `<header>`（品牌 + 版本 chip + 右侧「AI 对话 / 收起」，用
+  `--dsh-frame-leading-clearance` 避让 macOS 窗口按钮）＋ 业务 iframe ＋ 会话 `<aside>`
+  （**始终挂载**，只用 display 控显隐）＋ 可拖 splitter（鼠标 / 键盘 ←→ 2% / Home-End，
+  `role="separator"` + `aria-valuenow`，区间 25%–45%）＋ 容器 <760px 覆盖式抽屉（420px 上限）
+  ＋ 宽度存 `localStorage`（`cervip.pal.cervical.agent-pane.v1`）。
+- 会话桥接接上 `ensureSession({ folder })` + `sessions.scope(id).get('conversation').input`
+  填**原生草稿**（不自动发送）；`inject` 补 `sessions`。
+- `test/client.test.mjs` 重写 4 条：③ 断言 `customFrame:true`、② 断言 inject 含 sessions、
+  ④ 断言 Panel 是 header + iframe + aside + splitter（不是裸 iframe）。
+- 检查链 57 条全绿，`staticPass: true`，tarball 自检通过。
+
+## 未发布 — 2026-10-22（MinerU 统一口径）
+
+- **显式提交 `model_version: 'pipeline'`**：原先吃服务端默认值，现在写死并导出 `MINERU_MODEL_DEFAULT`。
+- 设置页删掉写死的假文案「MINERU_TOKEN 已配置（掩码：mr-****）」——本版没有 Token 状态接口，改成如实说明"只从 `.secrets/mineru.json` 读取，此处不显示状态"。
+- 单测 57 条仍全绿。
+
 ## 2026-10-21 · 装机目标更正（V2 前的准备）
 
 - **更正**：装机目录不是 `~/.dsh/profiles/desktop`（CLI 侧，Desktop 不读）。DSH Desktop 0.12.0 实际加载的是 app 自己的 Harness `~/Library/Application Support/dsh-desktop/harness/profiles/web`。

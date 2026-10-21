@@ -9,8 +9,10 @@
  *    否则本地能开、装进 Desktop 就 404）；
  * 4. 卸载时按序关库。
  *
- * 为什么 UI 走 iframe：本项目是**标准分栏**（见 lib/layout.js，customFrame=false），
- * 右侧原生会话由宿主管，业务区只需要一个能自己滚动的页面。iframe 指向
+ * 为什么 UI 走 iframe：业务界面（public/，12 个视图）是一份独立的前端，宿主只负责
+ * 把它放进面板的业务区。面板本身现在是 **customFrame=true**（见 lib/layout.js 顶部注释：
+ * 标准分栏下宿主不提供 AI 按钮位与拖宽接口，2026-10-21 实机反馈界面变形后改判），
+ * 由 lib/client.js 自绘 header + 会话分栏，iframe 只是业务区那半边的容器。iframe 指向
  * `/api/cervical/ui/`，页面里的接口基址按自身路径推出来（见 public/app.js 的 apiBase()），
  * 所以「本地 dev-server 打开」与「装进 Desktop」用的是同一份前端，不需要两套构建。
  */
