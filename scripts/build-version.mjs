@@ -9,7 +9,7 @@
  *   node scripts/build-version.mjs           写入（内容没变不落盘）
  *   node scripts/build-version.mjs --check   只校验，与 VERSION 不一致时退出码 1
  *
- * 渠道由环境变量 ESOPPAL_CHANNEL 指定，三选一：prototype / beta / stable，默认 prototype。
+ * 渠道由环境变量 CERVIPAL_CHANNEL 指定，三选一：prototype / beta / stable，默认 beta（3.2 起是开发版）。
  * 规则见 breast 家族的 docs/VERSIONING.md §4（同一套约定）。
  */
 import { execFileSync } from 'node:child_process'
