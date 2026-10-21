@@ -15,7 +15,7 @@
 | 原型 demo | 完成并签认 | `prototypes/v0.2/`（12 个一级页、三档字号、私密折叠、AI 面板五态） |
 | **开发版 `public/` + `dsh/` 接口** | **完成（3.2）** | `public/` 四件与原型逐视图 parity；`dsh/` 提供 bootstrap / profile / export / import / candidate；43 条断言全绿 |
 | **MinerU 真实解析** | **完成** | 真实 PDF 8 KB → 5 条候选（含 `<0.5`，HTML 表格已解码），只写候选、不碰事实层 |
-| **导出** | 完成（Markdown） | `GET /api/cervical/export/:key.md` 下载、`POST …/save` 落 `exports/`；**私密内容强制剔除** |
+| **导出** | 完成（Markdown） | 第一段就是「最近几次的变化」（并排 + 差值 + 命中规则，不写判断），再列指标/治疗/放疗/病理/随访；`GET /api/cervical/export/:key.md` 下载、`POST …/save` 落 `exports/`；**私密内容强制剔除** |
 | 检查链 | 全绿 | `npm run check`：语法 / 冻结合同 / 文案红线 / 列一致性 / 43 条单测 / 包结构 |
 
 **仍未做（如实）**：DSH Desktop 实机装机（`lib/client.js` 已按家族实证改成 ModuleLoader 组件，但本机无 Desktop 会话，没装就不算通过）；导出 PDF/DOCX；云端同步；真实患者访谈。逐条落点见 `docs/DEV-REQUIREMENTS-2026-10-21.md` 第四节。

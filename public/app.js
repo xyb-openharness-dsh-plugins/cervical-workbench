@@ -97,10 +97,14 @@ let D = { profiles: {}, trials: [] };
 let TRIALS = [];
 let DATA_SOURCE = 'pending';   // 'api' | 'demo' | 'empty'
 
-/** 接口基址：dev-server 下是空串，宿主下是页面路径去掉 /ui/... 之后的前缀。 */
+/** 挂载前缀：页面在 `<前缀>/api/cervical/ui/index.html`，接口在 `<前缀>/api/cervical/…`。
+ *  所以这里要**把 `/api/cervical` 去掉**，只留挂载前缀（独立启动与 Desktop 都是空串）。
+ *  踩过一次：这里返回 `/api/cervical`，调用处再拼 `/api/cervical/xxx` →
+ *  `/api/cervical/api/cervical/bootstrap` 404，页面静默回退演示数据，看着"有数据"其实没连上库。 */
 function apiBase() {
   const m = location.pathname.match(/^(.*)\/ui(?:\/|$)/);
-  return m ? m[1] : '';
+  const base = m ? m[1] : '';
+  return base.replace(/\/api\/cervical$/, '');
 }
 
 function applyData(data) {
@@ -959,8 +963,11 @@ function vMind() {
 
 function vReview() {
   const p = P(), sub = state.sub.review || 0;
+  /* 导出入口提到页面级：停在哪个子页签都能整理这份清单，
+     里面第一段就是"最近几次的变化"，不必回「就诊准备」才找得到。 */
+  const exportBar = `<div class="actions" style="margin:0 0 12px"><button data-action="export-review">整理成复诊清单（含最近的变化）</button></div>`;
   if (sub === 0) {
-    return `${pageHead(true)}<div class="card"><div class="card-head"><h2>复诊节奏（医生安排）</h2></div>
+    return `${pageHead(true)}${exportBar}<div class="card"><div class="card-head"><h2>复诊节奏（医生安排）</h2></div>
       <div class="table-wrap"><table class="cycle-table"><thead><tr><th>项目</th><th>频率</th><th>依据</th><th>下一次</th></tr></thead><tbody>
       ${p.rhythm.map(r => `<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td><td>${esc(r[2])}</td><td>${esc(r[3])}</td></tr>`).join('')}
       </tbody></table></div>
@@ -974,7 +981,7 @@ function vReview() {
     const cy = p.cytology ? p.cytology.rows[0] : null;
     const hp = p.hpv ? p.hpv.rows[0] : null;
     const im = p.imaging ? p.imaging.rows[0] : null;
-    return `${pageHead(true)}
+    return `${pageHead(true)}${exportBar}
     <div class="notice">三类随访节点并排看：细胞学、HPV、影像；各自的下一次时间以医生安排为准。</div>
     <div class="grid">
       <div class="card"><div class="card-head"><h2>细胞学</h2></div><div class="rows">${cy ? row(esc(cy[0]), esc(cy[2])) : row('—', '未记录')}</div></div>
@@ -986,21 +993,23 @@ function vReview() {
     </div></div>`;
   }
   if (sub === 2) {
-    if (!p.screening) return `${pageHead(true)}${emptyBox('没有筛查档案', '本人筛查史、疫苗记录可以记在这里。')}`;
+    if (!p.screening) return `${pageHead(true)}${exportBar}${emptyBox('没有筛查档案', '本人筛查史、疫苗记录可以记在这里。')}`;
     const byKind = ['本人筛查史', '疫苗记录', '家属可讨论问题'].map(k => {
       const rows = p.screening.rows.filter(r => r[0] === k);
       return rows.length ? `<div class="card"><div class="card-head"><h2>${esc(k)}</h2></div><div class="rows">${rows.map(r => row(esc(r[1]), `${esc(r[2])}${r[3] ? ' · ' + esc(r[3]) : ''}`)).join('')}</div></div>` : '';
     }).join('');
-    return `${pageHead(true)}<div class="notice">这一页只放<b>本人档案与"可以问的问题"</b>；不给疫苗接种建议，也不给家属做筛查建议。</div>${byKind}`;
+    return `${pageHead(true)}${exportBar}<div class="notice">这一页只放<b>本人档案与"可以问的问题"</b>；不给疫苗接种建议，也不给家属做筛查建议。</div>${byKind}`;
   }
   const qs = state.questions || [];
-  return `${pageHead(true)}
+  /* 导出入口提到页面级：无论停在哪个子页签都能整理这份清单，
+     里面第一段就是"最近几次的变化"，不用回「就诊准备」才找得到。 */
+  return `${pageHead(true)}${exportBar}
   <div class="card"><div class="card-head"><h2>就诊准备</h2><span class="muted">打印或手机备忘都行</span></div>
     <div class="rows">
       ${row('最想问的一条', p.mindset)}
       ${row('带什么', '病理报告 · 最近影像 · 用药清单 · 这份清单')}
       ${row('最近的变化', `${p.lateEffects ? p.lateEffects.rows[0][1] + '：' + p.lateEffects.rows[0][3] : '按实际记'}`)}
-    </div><div class="actions"><button data-action="export-review">整理成 Markdown</button><button class="soft" data-action="add-question">加一个问题</button></div></div>
+    </div><div class="actions"><button class="soft" data-action="add-question">加一个问题</button></div></div>
   <div class="card"><div class="card-head"><h2>我的问题清单（${qs.length}）</h2></div>
     <div class="rows">${qs.length ? qs.map(q => row(esc(q), '', `<button class="soft" data-action="toggle-ask">标记已问</button>`)).join('') : '<p class="muted" style="padding:12px">还没有问题；上面点"加一个问题"会放一条示例。</p>'}</div></div>`;
 }
@@ -1175,6 +1184,21 @@ function dlgExport() {
     <textarea id="export-edit" aria-label="导出内容，可直接编辑" style="width:100%;min-height:320px;font:12px/1.7 ui-monospace,SFMono-Regular,monospace;padding:12px;border:1px solid #d8e0ea;border-radius:10px;background:#fff;color:#213139;resize:vertical">${esc(md)}</textarea>
     <p class="small-note">直接在上方编辑；「我的看法」区永远带"不是医生结论"标注。私密记录不会出现在这里。</p>`,
     `<button class="soft" data-action="close">取消</button><button class="soft" data-action="export-download">下载 .md（完整版）</button><button class="primary" data-action="export-save">保存到资料目录</button>`);
+  /* 接了库就用服务端那份：它比本地这段草稿完整，且「最近几次的变化」只有服务端算得出。
+     演示态（apiBase 不通）保留上面的本地草稿，不假装有数据。 */
+  if (DATA_SOURCE === 'api') {
+    fetch(`${apiBase()}/api/cervical/export/${encodeURIComponent(state.profile)}.md`, { headers: { accept: 'text/markdown' } })
+      .then(r => (r.ok ? r.text() : null))
+      .then(text => {
+        const ta = $('#export-edit');
+        if (ta && text && document.body.contains(ta)) {
+          ta.value = text;
+          ta.dataset.source = 'server';
+          ta.addEventListener('input', () => { ta.dataset.dirty = '1'; });
+        }
+      })
+      .catch(() => {});
+  }
 }
 
 /* ---------------- render root ---------------- */
@@ -1342,8 +1366,20 @@ document.addEventListener('click', (e) => {
     'add-viewpoint': () => toast('感受会记为"一条信息"，标注不是医生结论'),
     'export-nutrition': () => toast('就诊展示：最近 10 条进食记录 + 在用补充剂（演示）'),
     'export-review': dlgExport,
-    /* 真导出：服务端按档案生成完整 markdown（私密分节一律不写，见 dsh/export.js 约束 1）。 */
+    /* 真导出：服务端按档案生成完整 markdown（私密分节一律不写，见 dsh/export.js 约束 1）。
+       用户在预览框里手改过就下改过的那份，不能"看着改了、下下来还是原文"。 */
     'export-download': () => {
+      const ta = $('#export-edit');
+      if (ta && ta.dataset.source === 'server' && ta.dataset.dirty === '1') {
+        const blob = new Blob([ta.value], { type: 'text/markdown;charset=utf-8' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `复诊准备-${P().name}-${new Date().toISOString().slice(0, 10)}.md`;
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+        toast('已下载（含你刚才手改的内容）');
+        return;
+      }
       if (DATA_SOURCE !== 'api') { toast('当前是离线演示数据；接上工作台后可以下载完整导出'); return; }
       window.open(`${apiBase()}/api/cervical/export/${encodeURIComponent(state.profile)}.md`, '_blank', 'noopener');
     },

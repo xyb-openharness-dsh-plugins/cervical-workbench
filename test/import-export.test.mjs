@@ -126,3 +126,63 @@ test('⑧ 导出文件名：去掉路径分隔符，带日期', () => {
   assert.equal(exportFilename({ name: '何秀云' }, new Date('2026-10-21T00:00:00Z')), '复诊准备-何秀云-2026-10-21.md');
   assert.equal(exportFilename({ name: 'a/b:c' }, new Date('2026-10-21T00:00:00Z')), '复诊准备-abc-2026-10-21.md');
 });
+
+/* ---- 最近几次的变化：用户要的是"发生了什么"，不是再列一遍数字 ---- */
+
+test('⑨ 变化段：分级改变与趋势要浮到前面，日常小波动不单列', () => {
+  const db = openDatabase(':memory:');
+  migrate(db);
+  seedDemo(db);
+  const md = renderPrepMarkdown(getProfile(db, 'A'), { excludedPrivate: true });
+  const block = md.slice(md.indexOf('## 最近几次的变化'), md.indexOf('## 最近一次记录'));
+  assert.ok(block.length > 0, '导出里必须有「最近几次的变化」一节');
+  /* 分级/描述改变：潮热从"偶有"走到"每天 4–5 次"，这是最该被看见的一条。 */
+  assert.match(block, /潮热频次：06-25 偶有 → 08-10 每天 2–3 次 → 10-02 每天 4–5 次/);
+  assert.match(block, /下肢淋巴水肿：06-18 0 期 → 08-06 Ⅰ期/);
+  /* 数值：SCC-Ag 连续下降 + 白蛋白在参考区间外 → 要进"值得先看"。 */
+  assert.match(block, /SCC-Ag（ng\/mL） \| 06-18 2\.4 → 08-06 1\.9 → 10-08 1\.6/);
+  assert.match(block, /白蛋白（g\/L）[\s\S]*参考区间外/);
+  /* 白细胞 +9%、血红蛋白 +4 这类不该单列，只在"其余"里出现。 */
+  assert.equal(/^\| 白细胞（/m.test(block), false, '白细胞日常回升不该单列成表行');
+  assert.match(block, /其余 \d+ 项（[^）]*白细胞/);
+  close(db);
+});
+
+test('⑩ 变化段：不写判断词（变差 / 加重 / 提示注意 一律不许出现）', () => {
+  const db = openDatabase(':memory:');
+  migrate(db);
+  seedDemo(db);
+  const md = renderPrepMarkdown(getProfile(db, 'A'));
+  /* 只查变化段：别的节里有医生原话（"后装期间腹泻加重"），那是照抄，不算我们的判断。 */
+  const block = md.slice(md.indexOf('## 最近几次的变化'), md.indexOf('## 最近一次记录'));
+  assert.equal(/变差|加重|恶化|提示注意|需要关注|不乐观|偏高|偏低|异常/.test(block), false);
+  assert.match(block, /谁需要处理由医生判断/);
+  close(db);
+});
+
+test('⑪ 变化段：只有 1 条记录的指标明说"无法比较"，不硬比', () => {
+  const p = {
+    name: '测试', metrics: [
+      { name: '血红蛋白', unit: 'g/L', band: [115, 150], points: [{ d: '2026-10-01', v: 118 }] },
+    ],
+  };
+  const md = renderPrepMarkdown(p);
+  const block = md.slice(md.indexOf('## 最近几次的变化'), md.indexOf('## 最近一次记录'));
+  assert.match(block, /没有命中上述规则的变化/);
+  assert.match(block, /只有 1 次记录、无法比较的：血红蛋白/);
+});
+
+test('⑫ 变化段：跨出参考区间要标出来，并照抄区间（不自己设范围）', () => {
+  const p = {
+    name: '测试', metrics: [
+      { name: '血红蛋白', unit: 'g/L', band: [115, 150], points: [{ d: '2026-09-01', v: 119 }, { d: '2026-10-01', v: 108 }] },
+      { name: '肌酐', unit: 'μmol/L', band: [41, 81], points: [{ d: '2026-09-01', v: 60 }, { d: '2026-10-01', v: 61 }] },
+    ],
+  };
+  const md = renderPrepMarkdown(p);
+  const block = md.slice(md.indexOf('## 最近几次的变化'), md.indexOf('## 最近一次记录'));
+  assert.match(block, /本次越出参考区间/);
+  assert.match(block, /血红蛋白 参考区间 115–150 g\/L/);
+  assert.equal(/肌酐/.test(block.split('其余')[0]), false, '没变化的指标不进表');
+  assert.match(block, /其余 1 项（肌酐）/);
+});
