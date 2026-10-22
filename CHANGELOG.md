@@ -61,6 +61,7 @@
 
 - **显式提交 `model_version: 'pipeline'`**：原先吃服务端默认值，现在写死并导出 `MINERU_MODEL_DEFAULT`。
 - 设置页删掉写死的假文案「MINERU_TOKEN 已配置（掩码：mr-****）」——本版没有 Token 状态接口，改成如实说明"只从 `.secrets/mineru.json` 读取，此处不显示状态"。
+- **Token 优先级改为文件优先**：显式 > `.secrets/mineru.json` > `MINERU_TOKEN`（2026-10-22 跨仓统一；此前 env 优先，遗留的过期 env 会让界面新存的 Token 长期不生效）。
 - 单测 57 条仍全绿。
 
 ## 2026-10-21 · 装机目标更正（V2 前的准备）
