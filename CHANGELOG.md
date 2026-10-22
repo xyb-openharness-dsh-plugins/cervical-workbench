@@ -1,5 +1,34 @@
 # 变更记录
 
+## 未发布 — 2026-10-22（设置页可手工填 Token，与密钥文件双向同步）
+
+上一版把「文档解析」页做成了只读文案「Token 只从本机 .secrets/mineru.json 读取（此处不显示状态与掩码）」，
+用户反馈：**还是要能自己在界面里填**。这版补上，并且要求"填进去"和"文件里"是同一份东西、不是两套。
+
+**做了什么**
+
+- 新增 `dsh/settings.js`，作为 Token 读写的**唯一实现**（设置页接口、路由、`mineru.js` 三处共用）。
+  不抽出来的风险很具体：界面写 A 文件、解析读 B 文件，用户以为存好了，解析照样 401。
+  导出 `secretFile` / `readMineruToken` / `validateMineruToken` / `saveMineruToken` /
+  `clearMineruToken` / `mineruSettingsStatus` / `maskToken`。
+- 落点改为 `CERVIPAL_MINERU_SECRET` > 包内 `.secrets/mineru.json`（**仅当已存在**时沿用）> `~/.cervipal/secrets/mineru.json`。
+  默认落到用户目录的原因：装进 Desktop 后包目录会随升级被整份替换，Token 会静默消失。
+- 写入原子：tmp 文件 + `renameSync`，文件 600、目录 700；保留 JSON 里的其它键，只增删 `token`。
+- `POST /api/cervical/settings/mineru`：`{token}` 保存 / `{action:'clear'}` 清除；校验错误 400，
+  文件坏或写失败 500。`GET` 返回 `{configured, source, sourceLabel, masked, file, fileExists, tokenUrl, error, permissions}`，
+  **不含 Token 原文**。`health.capabilities` 增加 `mineru-settings`（前端据此判断能不能显示输入框）。
+- `mineru.js` 的 `resolveToken` 改为复用 `settings.js`；读文件失败抛 `BAD_SECRET_FILE`
+  而不是当"没配"（否则用户会在设置页反复保存却始终失败）。优先级仍是**文件 > env**。
+- 前端「文档解析」：`<input type="password">` + 保存 / 清除，保存后清空输入框、状态区回显
+  掩码与文件路径；`prototypes/v0.2/app.js` **同步同一段代码**，保持"原型是唯一视觉基线"。
+- 单测 57 → 62（新增 5 条：状态读取 / 校验失败不落文件 / 保存后文件确实存在且 600 且响应无原文 /
+  文件优先于 env / 清除只删 token 键 / 坏文件不静默覆盖）。
+- 真实浏览器实测（dev-server + puppeteer 点选，非单测推断）：初始「尚未配置」→ 粘贴
+  `sk-…987654` → 保存 → 状态变「当前生效：sk-u****54 · 已保存于 …/mineru.json」、输入框已清空、
+  磁盘 JSON 为 `{"token":"sk-ui-manual-test-abcdef987654"}`、权限 `600` → 点清除 → 状态回到「尚未配置」、
+  文件随之删除。
+- README 的 Token 段同步更正：原文写"两者并存时环境变量赢"，与实现（文件优先）相反，一并改掉。
+
 ## 未发布 — 2026-10-22（面板改判 customFrame，修「装上去界面变形」）
 
 装机后用户截图反馈：业务区被拉满整幅、**顶栏没有 AI 对话按钮**、右侧会话区宽度拖不动。

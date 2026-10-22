@@ -1093,6 +1093,7 @@ function openDialog(eyebrow, title, body, foot = '') {
   $('#dialog-eyebrow').textContent = eyebrow; $('#dialog-title').textContent = title;
   $('#dialog-body').innerHTML = body; $('#dialog-foot').innerHTML = foot;
   $('#dialog').showModal();
+  if (title === '设置') loadMineruStatus();
 }
 const closeDialog = () => $('#dialog').close();
 
@@ -1102,13 +1103,52 @@ function dlgProfiles() {
       <div><b>${esc(p.name)}的资料</b><p>${esc(p.meta)} · ${esc(p.headline)}</p></div><span class="profile-caret">${state.profile === k ? '当前' : '切换'}</span></button>`).join(''),
     '<button data-action="close">取消</button>');
 }
+/* ---- 文档解析设置：Token 状态与手工保存 ----
+   状态只显示掩码与文件路径，原文不回显（服务端也不返回）。
+   离线演示（DATA_SOURCE !== 'api'）如实说"不可用"，不假装已保存。 */
+function mineruStatusText(s) {
+  if (!s) return '读取 Token 状态失败：本机服务没有返回内容。';
+  if (s.error) return `读取失败：${s.error}`;
+  if (!s.configured) return '尚未配置 Token：扫描件与照片的自动识别会用不了；TXT / MD / CSV 仍在本机解析。';
+  const where = s.source === 'file' ? `已保存于 ${s.file}` : '来自环境变量 MINERU_TOKEN（未写入文件）';
+  return `当前生效：${s.masked} · ${where}`;
+}
+function loadMineruStatus() {
+  const el = $('#mineru-status');
+  if (!el) return;
+  /* 原型里没有 DATA_SOURCE（那份是纯离线演示），用 typeof 兜住，两版共用同一段代码 */
+  if (typeof DATA_SOURCE === 'undefined' || DATA_SOURCE !== 'api') { el.textContent = '离线演示：未连接工作台，读不到 Token 状态。'; return; }
+  fetch(`${apiBase()}/api/cervical/settings/mineru`, { headers: { accept: 'application/json' } })
+    .then((r) => r.json().then((j) => { if (!r.ok) throw new Error(j.message || j.error || '读取失败'); return j; }))
+    .then((s) => { const n = $('#mineru-status'); if (n) n.textContent = mineruStatusText(s); })
+    .catch((e) => { const n = $('#mineru-status'); if (n) n.textContent = `读取 Token 状态失败：${e.message}`; });
+}
+function mineruPost(payload) {
+  const el = $('#mineru-status');
+  if (typeof DATA_SOURCE === 'undefined' || DATA_SOURCE !== 'api') { toast('离线演示不能保存 Token'); return; }
+  fetch(`${apiBase()}/api/cervical/settings/mineru`, {
+    method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload),
+  })
+    .then((r) => r.json().then((j) => { if (!r.ok) throw new Error(j.message || j.error || '保存失败'); return j; }))
+    .then((s) => {
+      if (el) el.textContent = mineruStatusText(s);
+      const input = $('#mineru-token'); if (input) input.value = '';
+      toast(payload.action === 'clear' ? '已清除本机 Token' : 'Token 已保存到本机密钥文件');
+    })
+    .catch((e) => {
+      if (el) el.textContent = `保存失败：${e.message}`;
+      toast('Token 保存失败');
+    });
+}
 function dlgSettings() {
   openDialog('小莲宝', '设置', `<div class="cfg-tabs" role="tablist">
   <button role="tab" aria-selected="true" data-action="cfg-tab" data-tab="ws">资料目录</button><button role="tab" aria-selected="false" data-action="cfg-tab" data-tab="parse">文档解析</button><button role="tab" aria-selected="false" data-action="cfg-tab" data-tab="kb">临床数据库</button></div>
   <div class="cfg-block" style="margin-top:16px" data-tab="ws"><h3>工作区资料目录</h3><div class="path-row"><code>~/Documents/CerviPalWorkspace（演示值）</code><button class="soft">选择…</button></div>
   <p class="small-note">患者数据只存入你明确选择的目录；工作台不把资料上传云端。</p></div>
-  <div class="cfg-block" style="margin-top:12px" data-tab="parse" hidden><h3>文档解析（MinerU）</h3><div class="token-row"><code class="masked">MINERU_TOKEN 已配置（掩码：mr-****）</code></div>
-  <p class="small-note">Token 只存本机 .secrets/（mode 600）；解析结果永远是候选，核对后才入档。</p></div>
+  <div class="cfg-block" style="margin-top:12px" data-tab="parse" hidden><h3>文档解析（MinerU）</h3>
+  <div class="token-row"><input id="mineru-token" type="password" autocomplete="new-password" placeholder="粘贴 MinerU API Token（sk-…）" aria-label="MinerU API Token"><button class="primary" data-action="mineru-save">保存</button><button class="soft" data-action="mineru-clear">清除</button></div>
+  <p class="small-note" id="mineru-status" role="status">正在读取本机 Token 状态…</p>
+  <p class="small-note">Token 只写进本机密钥文件（权限 600），只用于向 MinerU 发起解析请求，不进患者资料、不进导出、不进提示词。没有 Token 可以到 <a href="https://mineru.net/apiManage/token" target="_blank" rel="noopener">MinerU 申请页 ↗</a> 领取；解析结果永远是候选，核对后才入档。</p></div>
   <div class="cfg-block" style="margin-top:12px" data-tab="kb" hidden><h3>2026 临床数据库</h3><div class="path-row"><code>cervical_cancer_trials_2026.sqlite · 158 条登记（演示摘录 14 条）</code></div>
   <p class="small-note">离线快照来自 CT.gov 在线通道；ChiCTR / 药物临床试验登记平台本轮未采集，覆盖未知。</p></div>`, '<button class="primary" data-action="close">完成</button>');
 }
@@ -1227,6 +1267,13 @@ document.addEventListener('click', (e) => {
       openDialog('小莲宝', '原文出处', `<p style="font-size:12.5px">${esc(line)}</p><p class="small-note">工作区不改动原文，也不替你解释它。</p>`, '<button class="primary" data-action="close">关闭</button>');
     },
     'pick-file': () => { const inp = $('#file-picker'); if (inp && typeof inp.click === 'function') inp.click(); else toast('当前浏览器不支持选择本机文件'); },
+    'mineru-save': () => {
+      const input = $('#mineru-token');
+      const token = input ? input.value.trim() : '';
+      if (!token) { toast('先把 Token 粘贴到输入框'); if (input) input.focus(); return; }
+      mineruPost({ token });
+    },
+    'mineru-clear': () => mineruPost({ action: 'clear' }),
     'export-save': () => {
       const ta = $('#export-edit');
       const txt = ta ? ta.value.trim() : '';

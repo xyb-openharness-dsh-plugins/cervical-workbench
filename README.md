@@ -49,8 +49,12 @@ npm start -- --workspace ~/CerviPalWorkspace
 # → http://127.0.0.1:4199/api/cervical/ui/index.html
 ```
 
-**MinerU Token 优先级**：显式传参 > 环境变量 `MINERU_TOKEN` > `.secrets/mineru.json`（600）。
-两者并存时**环境变量赢**；换 token 时先 `unset MINERU_TOKEN`，否则会以为文件没生效。
+**MinerU Token 优先级**（2026-10-22 统一口径）：显式传参 > 密钥文件（600）> 环境变量 `MINERU_TOKEN`（仅在文件缺失时兜底）。
+**文件赢，env 只兜底**：一条遗留的过期 env 若优先，会长期盖住新存的 Token，症状就是"换了 Token 还是 401"，极难自查。
+密钥文件位置：`CERVIPAL_MINERU_SECRET` 指定的路径 > 包内 `.secrets/mineru.json`（**仅当它已存在**时沿用）> `~/.cervipal/secrets/mineru.json`（默认落点）。
+默认放用户目录是因为装进 Desktop 后包目录会随升级被替换掉；包里那份只作为已有部署的兼容。
+
+**Token 怎么填**：设置 →「文档解析」页直接粘贴保存（也可清除），保存即原子写入上面那个 JSON（tmp+rename，文件 600 / 目录 700），状态区回显掩码与文件路径，**不回显 Token 原文**。设置页与解析器共用 `dsh/settings.js` 这一份实现，不会出现"界面写一个文件、解析读另一个文件"。
 MinerU 不接受 `.md`（`unsupported file type`），测通路请用真实 PDF。
 
 原型是纯静态页，直接双击 `prototypes/v0.2/index.html`（file:// 只读，不写盘）。

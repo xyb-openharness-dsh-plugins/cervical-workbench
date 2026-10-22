@@ -6,7 +6,7 @@
 
 import assert from 'node:assert/strict';
 import { homedir } from 'node:os';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { after, test } from 'node:test';
 import { Workbench, validateWorkspacePath } from '../dsh/workbench.js';
@@ -139,4 +139,120 @@ test('⑧ 资料目录校验：主目录 / 桌面 / /tmp 一律拒绝', () => {
   assert.ok(validateWorkspacePath(join(homedir(), 'Desktop')).length > 0);
   assert.ok(validateWorkspacePath('/tmp/x').length > 0);
   assert.deepEqual(validateWorkspacePath(join(tmp, 'ok')), [], '自己新建的目录应当可用');
+});
+
+
+/* ---------------- 文档解析设置：Token 手工填写与文件同步 ---------------- */
+
+/** 每个用例用独立密钥文件；同时清掉 MINERU_TOKEN，避免开发机上的环境变量把结果带偏。 */
+async function withTokenEnv(fn) {
+  const file = join(tmp, `mineru-${Date.now()}-${Math.random().toString(16).slice(2)}.json`);
+  const before = { secret: process.env.CERVIPAL_MINERU_SECRET, token: process.env.MINERU_TOKEN };
+  process.env.CERVIPAL_MINERU_SECRET = file;
+  delete process.env.MINERU_TOKEN;
+  try {
+    await fn({ file });
+  } finally {
+    if (before.secret === undefined) delete process.env.CERVIPAL_MINERU_SECRET; else process.env.CERVIPAL_MINERU_SECRET = before.secret;
+    if (before.token === undefined) delete process.env.MINERU_TOKEN; else process.env.MINERU_TOKEN = before.token;
+  }
+}
+
+const postToken = (url, body) => fetch(`${url}api/cervical/settings/mineru`, {
+  method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body),
+});
+
+test('⑨ 设置页能读到 Token 状态：未配置时不编"已配置"，只为环境变量时不谎称已存文件', async () => {
+  await withTokenEnv(async () => {
+    await withServer(async ({ url }) => {
+      const empty = await (await fetch(`${url}api/cervical/settings/mineru`)).json();
+      assert.equal(empty.configured, false);
+      assert.equal(empty.source, 'none');
+      assert.equal(empty.masked, '');
+      assert.match(empty.tokenUrl, /apiManage\/token/u, '没有 Token 时也要给申请入口');
+    });
+    process.env.MINERU_TOKEN = 'sk-env-only-token-1234';
+    await withServer(async ({ url }) => {
+      const j = await (await fetch(`${url}api/cervical/settings/mineru`)).json();
+      assert.equal(j.configured, true);
+      assert.equal(j.source, 'env', '只有环境变量时来源要写明，不能说得像已保存');
+      assert.match(j.sourceLabel, /环境变量/u);
+      assert.match(j.masked, /^sk-e\*\*\*\*34$/u, '掩码只露首尾');
+    });
+  });
+});
+
+test('⑩ 手工保存 Token：写进密钥文件、权限 600、接口不回传原文', async () => {
+  await withTokenEnv(async ({ file }) => {
+    await withServer(async ({ url }) => {
+      const token = 'sk-manual-input-abcdef123456';
+      const r = await postToken(url, { token });
+      assert.equal(r.status, 200);
+      const saved = await r.json();
+      assert.equal(saved.configured, true);
+      assert.equal(saved.source, 'file');
+      assert.equal(JSON.stringify(saved).includes(token), false, '响应里不能出现 Token 原文');
+      assert.equal(saved.masked, 'sk-m****56');
+
+      assert.equal(existsSync(file), true, '保存后文件必须真的存在（与界面显示同步）');
+      assert.equal(JSON.parse(readFileSync(file, 'utf8')).token, token);
+      assert.equal((statSync(file).mode & 0o777).toString(8), '600', '密钥文件必须 600');
+
+      const again = await (await fetch(`${url}api/cervical/settings/mineru`)).json();
+      assert.equal(again.masked, saved.masked, '重新读取要与保存后的状态一致');
+      assert.equal(again.source, 'file');
+    });
+  });
+});
+
+test('⑪ 文件优先于环境变量：设置页存的 Token 不会被遗留 env 盖住', async () => {
+  await withTokenEnv(async ({ file }) => {
+    writeFileSync(file, JSON.stringify({ token: 'sk-from-file-999999' }));
+    process.env.MINERU_TOKEN = 'sk-stale-env-000000';
+    const { resolveToken } = await import('../dsh/mineru.js');
+    const resolved = resolveToken();
+    assert.equal(resolved.token, 'sk-from-file-999999');
+    assert.equal(resolved.source, 'secret-file');
+    await withServer(async ({ url }) => {
+      const j = await (await fetch(`${url}api/cervical/settings/mineru`)).json();
+      assert.equal(j.source, 'file');
+    });
+  });
+});
+
+test('⑫ 无效输入不写文件；清除只删 token 键并保留其它键', async () => {
+  await withTokenEnv(async ({ file }) => {
+    await withServer(async ({ url }) => {
+      const bad = await postToken(url, { token: 'short' });
+      assert.equal(bad.status, 400);
+      assert.equal(existsSync(file), false, '校验失败不该留下文件');
+
+      const spaced = await postToken(url, { token: 'sk-has space in token' });
+      assert.equal(spaced.status, 400);
+
+      assert.equal((await postToken(url, { token: 'sk-good-token-123456' })).status, 200);
+      writeFileSync(file, JSON.stringify({ token: 'sk-good-token-123456', note: 'keep-me' }));
+      const cleared = await (await postToken(url, { action: 'clear' })).json();
+      assert.equal(cleared.configured, false);
+      assert.equal(cleared.source, 'none');
+      const left = JSON.parse(readFileSync(file, 'utf8'));
+      assert.equal(left.token, undefined);
+      assert.equal(left.note, 'keep-me', '清除只该动 token 键');
+    });
+  });
+});
+
+test('⑬ 密钥文件坏了要报出来，不当作"未配置"静默覆盖', async () => {
+  await withTokenEnv(async ({ file }) => {
+    writeFileSync(file, '{ broken json');
+    await withServer(async ({ url }) => {
+      const j = await (await fetch(`${url}api/cervical/settings/mineru`)).json();
+      assert.match(j.error || '', /不是合法 JSON/u, '坏文件要在状态里说清楚');
+      assert.equal(j.configured, false);
+      const r = await postToken(url, { token: 'sk-other-token-777777' });
+      assert.equal(r.status, 500);
+      assert.match((await r.json()).message, /不是合法 JSON/u);
+      assert.equal(readFileSync(file, 'utf8'), '{ broken json', '坏文件不能被静默覆盖');
+    });
+  });
 });

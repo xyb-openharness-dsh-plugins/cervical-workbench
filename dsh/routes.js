@@ -67,7 +67,7 @@ export function createApiHandler({ source, version, build, serveUi, failure = nu
       if (req.method !== 'GET') return sendJson(res, 405, { error: 'method_not_allowed' })
       return sendJson(res, 200, {
         ok: !failure, version, build, apiVersion: 'v1', ui: UI_PREFIX,
-        capabilities: ['bootstrap', 'profile', 'export', 'import', 'candidate'],
+        capabilities: ['bootstrap', 'profile', 'export', 'import', 'candidate', 'mineru-settings'],
         error: failure || undefined,
       })
     }
@@ -157,6 +157,38 @@ export function createApiHandler({ source, version, build, serveUi, failure = nu
       } catch (error) {
         const { status, body } = errorBody(error)
         return sendJson(res, status, body)
+      }
+    }
+
+    /* 文档解析设置：Token 的读取（只给掩码与路径）与手工保存/清除。
+       两条链路共用这一份，所以设置页在本地 dev-server 与 Desktop 里行为一致。
+       原文永不出现在响应里——界面只需要知道「有没有配、存在哪个文件、哪把 key 生效」。 */
+    if (path === `${API_PREFIX}/settings/mineru`) {
+      const settings = await import('./settings.js')
+      if (req.method === 'GET') {
+        try {
+          return sendJson(res, 200, settings.mineruSettingsStatus())
+        } catch (error) {
+          return sendJson(res, 500, { error: 'settings_unavailable', message: error.message })
+        }
+      }
+      if (req.method !== 'POST') return sendJson(res, 405, { error: 'method_not_allowed' })
+      let body = {}
+      try {
+        const raw = await readBody(req, 64 * 1024)
+        body = raw.length ? JSON.parse(raw.toString('utf8')) : {}
+      } catch {
+        return sendJson(res, 400, { error: 'bad_json', message: '请求体不是合法 JSON' })
+      }
+      try {
+        const status = body?.action === 'clear'
+          ? settings.clearMineruToken()
+          : settings.saveMineruToken(body?.token)
+        return sendJson(res, 200, status)
+      } catch (error) {
+        /* 校验失败是用户输入问题（400）；文件坏、写不进去是环境问题（500） */
+        const status = /请先填写|太短|过长|不能有空格|意外字符|不合法 JSON/.test(error.message) ? 400 : 500
+        return sendJson(res, status, { error: status === 400 ? 'invalid_token' : 'settings_write_failed', message: error.message })
       }
     }
 

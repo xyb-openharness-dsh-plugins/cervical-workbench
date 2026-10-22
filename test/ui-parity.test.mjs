@@ -61,10 +61,15 @@ test('⑤ 样式表与原型逐字节一致（改视觉先改原型，再同步�
   assert.equal(read('public/style.css'), read('prototypes/v0.2/style.css'));
 });
 
-test('⑥ index.html 只差 <title> 与 favicon：不允许开发版自己造一套骨架', () => {
-  /* <title> 在原型里写着"原型"，开发版不能照抄。除此之外逐字节相同——
+test('⑥ index.html 只差 <title> 与版本号：不允许开发版自己造一套骨架', () => {
+  /* <title> 在原型里写着"原型"，开发版不能照抄。版本号（title / 交互原型条 / ver-chip /
+     页脚）必须随 VERSION 前移，而 prototypes/v0.2 冻结在 0.1.0 不动（D37）——所以两边
+     先把 vX.Y.Z 归一化成占位符再比。除此之外逐字节相同：
      骨架、容器 id、favicon、脚本标签都必须一致。 */
-  const strip = (html) => html.replace(/<title>[\s\S]*?<\/title>/g, '').trim();
+  const strip = (html) => html
+    .replace(/<title>[\s\S]*?<\/title>/g, '')
+    .replace(/v\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?/g, 'vX.Y.Z')
+    .trim();
   assert.equal(strip(read('public/index.html')), strip(read('prototypes/v0.2/index.html')),
     'index.html 与原型不一致；若确需改骨架，先同步改原型');
 });
