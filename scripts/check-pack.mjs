@@ -13,7 +13,7 @@
  * 退出码：0 = 包可独立启动；1 = 有缺失或有接口不通。
  */
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readdirSync, rmSync, mkdirSync } from 'node:fs';
+import { mkdtempSync, readdirSync, rmSync, mkdirSync, statSync, existsSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -80,6 +80,38 @@ try {
   if (!/## 最近几次的变化/.test(md)) throw new Error('导出里没有「最近几次的变化」——装的是旧包');
   if (/性交痛|干涩/.test(md)) throw new Error('导出里出现私密原文');
   notes.push(`✓ 导出 · ${Buffer.byteLength(md, 'utf8')} B · 变化段在 · 无私密`);
+
+  /* 设置页的 Token 读写：这是唯一会**写用户磁盘**的接口，必须从 tarball 里验，
+     而且要指到临时文件——绝不能碰用户真实的 ~/.cervipal/secrets。 */
+  const secret = join(tmp, 'mineru-secret.json');
+  process.env.CERVIPAL_MINERU_SECRET = secret;
+  process.env.MINERU_TOKEN = ''; // 别让环境变量兜底，掩盖"文件没写进去"
+  const before = await (await fetch(`${base}/api/cervical/settings/mineru`)).json();
+  if (before.configured) throw new Error('临时密钥文件还没写就报已配置（环境变量没清干净？）');
+
+  const bad = await fetch(`${base}/api/cervical/settings/mineru`, {
+    method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ token: 'sk-bad token' }),
+  });
+  if (bad.status !== 400) throw new Error(`非法 Token 应给 400，实际 ${bad.status}`);
+
+  const saved = await (await fetch(`${base}/api/cervical/settings/mineru`, {
+    method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ token: 'sk-pack-test-123456' }),
+  })).json();
+  if (!saved.configured || saved.source !== 'file') throw new Error(`保存后状态不对：${JSON.stringify(saved)}`);
+  if (!saved.masked.includes('****')) throw new Error('掩码没有打码');
+  if (saved.masked.includes('pack-test')) throw new Error('掩码泄漏了 Token 中段');
+  const mode = (statSync(secret).mode & 0o777).toString(8);
+  if (mode !== '600') throw new Error(`密钥文件权限应为 600，实际 ${mode}`);
+
+  const cleared = await (await fetch(`${base}/api/cervical/settings/mineru`, {
+    method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ action: 'clear' }),
+  })).json();
+  if (cleared.configured) throw new Error('清除后仍报已配置');
+  if (existsSync(secret)) throw new Error('清除后文件还在（应只剩空文件才删）');
+  notes.push(`✓ 设置 · 保存→${saved.masked} · 权限 ${mode} · 清除生效 · 非法输入 400`);
 } catch (error) {
   failures.push(`准备阶段：${error.message.split('\n')[0]}`);
 } finally {
