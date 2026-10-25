@@ -39,7 +39,8 @@
     "check:install": "node scripts/check-install.mjs",
     "check:version": "node scripts/check-version.mjs",
     "check:pack": "node --disable-warning=ExperimentalWarning scripts/check-pack.mjs",
-    "release:pack": "node scripts/build-client.mjs && node scripts/build-version.mjs && npm pack --pack-destination release"
+    "release:pack": "node scripts/build-client.mjs && node scripts/build-version.mjs && npm pack --pack-destination release",
+    "probe:primer": "node scripts/probe-disease-primer.mjs"
   },
   "dsh": {
     "bundle": {
