@@ -22,10 +22,12 @@
 
 | 机构 | 文件 | 版本 / 年份 | 原件 | 本台的用途 |
 |---|---|---|---|---|
-| FIGO | FIGO staging for carcinoma of the cervix uteri | 2018 修订 | 未取得原件（据项目 SPEC 与 USER-RESEARCH 转引） | 分期档案的期别结构（含 IIIC1/IIIC2、r/p 标记） |
-| CSCO | CSCO 宫颈癌诊疗指南 | 版本未核实 | 未取得原件（全文未核对） | 国内治疗路径与药物可及性的对照；本版不作引用依据 |
-| NCCN | NCCN Guidelines · Cervical Cancer | 版本未核实 | 未取得原件（全文未核对） | 国际路径结构的对照；本版不作引用依据 |
-| WHO | Classification of Tumours: Female Genital Tumours | 第 5 版（年份未核实） | 未取得原件 | 病理类型命名口径 |
+| FIGO | FIGO staging for carcinoma of the cervix uteri | 2018 修订 | [未取得原件，据 NCI PDQ 二次来源](https://www.cancer.gov/types/cervical/hp/cervical-treatment-pdq) | 分期档案的期别结构（含 IIIC1/IIIC2、r/p 标记） |
+| CSCO | CSCO 宫颈癌诊疗指南 | 版本未核实 | [未取得原件，据出版方书目页](https://www.pmphmall.com/gdsdetail/660506-338835) | 国内治疗路径与药物可及性的对照；本版不作引用依据 |
+| NCCN | NCCN Guidelines · Cervical Cancer | 版本未核实 | [未取得原件，据 NCCN 官网指南页](https://www.nccn.org/guidelines/guidelines-detail?category=1&id=1426) | 国际路径结构的对照；本版不作引用依据 |
+| WHO | Classification of Tumours: Female Genital Tumours | 第 5 版（年份未核实） | [未取得原件，据 IARC 官方书目页](https://publications.iarc.fr/Book-And-Report-Series/Who-Classification-Of-Tumours/Female-Genital-Tumours-2020) | 病理类型命名口径 |
+
+表内链接与看板「?」浮窗同源（2026-10-27 逐条用真浏览器验活）。二次来源的性质照实写在括号里：NCI PDQ 是国家癌症研究所的治疗概要（含 FIGO 分期说明），人卫商城与 IARC 是出版方书目页，NCCN 官网指南页需注册才能下载全文。
 
 指南给的是「通常怎么做」，不是「你该怎么做」；本台引用一律带机构与版本，查不到版本就写「版本未核实」。未取得原件的文件只记「存在」与「大致讲什么」，不引用其具体条文。本项目 2026-10-21 探测过国家药监局药物临床试验登记与信息公示平台（HTTP 202 挑战页）与 ChiCTR（HTTP 405），均判定不可采集；覆盖未知不等于没有登记。
 

@@ -1,5 +1,42 @@
 # 变更记录
 
+## 未发布 — 2026-10-27（36 号 v2 补齐：指南可点 + 状态卡）
+
+按 starter `docs/36-DISEASE-PRIMER.md` §2.5 / §2.6 补齐，v0.1.1 → v0.1.2。
+
+**做了什么**
+
+- `prototypes/v0.2/primer.js`、`primer.css` 覆盖为 starter `assets/patterns/disease-primer.js/.css`
+  2026-10-27 版：来源行与表格「原件」列渲染可点链接，缺链接行显示「缺链接，违反 36 号 §2.5」红标。
+  其中 CSS 为 starter 1.9.0 的 **§4.3 浮窗排版修复**：去掉 `.dp-lead` / `.dp-points li` 的
+  `max-width:68ch`（正文右边界与表格、小标题一致）、分组列表缩进 20px、表格 `min-width:640px`
+  （窄容器横向滚动，不压缩列宽）。`primer.js` 为仓内同步的 1.8.x 版，未做本地改写。
+- `primer-data.js` 链接补齐：8 条 `sources` + 4 行 evidence 表「原件」列，共 14 项断言全部带链接
+  （4 个唯一 URL，逐条用真浏览器验活）：
+  - FIGO 2018 分期 → NCI PDQ 宫颈癌治疗（含 FIGO 分期说明；二次来源）
+  - WHO 女性生殖系统肿瘤分类第 5 版 → IARC/WHO 官方书目页
+  - CSCO 宫颈癌诊疗指南 → 人卫智慧服务商城出版方书目页（2026 版在售；全文未核对，版本仍写「未核实」）
+  - NCCN Cervical Cancer → NCCN 官网指南页（下载全文需注册）
+  - 2 处 `nolink` 如实标注：ClinicalTrials.gov 自采快照（`research/cervical-cancer/raw-2026.json`）、
+    NMPA / ChiCTR 采集探测记录（`research/cervical-cancer/cn-registry-attempt.json`），均无公开 URL。
+- 看板首卡按 §2.6 四件补齐（原型与开发版同步）：卡头 `D+N 状态卡 · 距<下次门诊>`、
+  大字天数由锚点日派生（A=放疗首日 2026-03-20、B=手术日 2026-04-21，Day 0；不手填）、
+  现状行（当前阶段原文 + 进行中 + 下次日期与事项）、出口按钮排（主按钮进当前阶段核心页 +
+  「疾病概要：宫颈癌是什么？」打开浮窗）。无锚点时整卡显示「待初始化」并指向「我的分期」。
+- 顶栏「?」按钮显式放在版本号 chip 左侧（原型与开发版两处 index.html），不再依赖模块末尾追加。
+- **修构建产物**：`public/` 开发版此前只有 `app.js / demo-data.js / index.html / style.css`，
+  打开后顶栏没有「?」；本次补 `primer.js`、`primer.css`、`primer-data.js` 并在 `public/index.html`
+  加对应 `<link>` / `<script>`，状态卡与样式同步到 `public/app.js`、`public/style.css`。
+- 新增 `scripts/check-primer-links.mjs`（36 号 §2.5 L1–L6 断言），并追加到 `npm run check` 末尾。
+- 版本升 patch：`0.1.1 → 0.1.2`（VERSION / package.json / `lib/version.js` / `lib/client.js` / public 页面同源）。
+
+**实测**
+
+- `node scripts/check-primer-links.mjs`：14 项，14 通过，0 失败（nolink 2 处均有 note）。
+- `node scripts/probe-disease-primer.mjs --port 8134 --url http://127.0.0.1:8134/prototypes/v0.2/index.html`：9/9 PASS。
+- 开发版构建产物同一探针（dev-server `/api/cervical/ui/`）：9/9 PASS；浮窗 12 个 `.dp-link`、0 个 `.dp-miss`。
+- `npm run check`：退出码 0（62/62 用例；版本 8 处一致 v0.1.2；链接断言 14/14）。
+
 ## 未发布 — 2026-10-22（设置页可手工填 Token，与密钥文件双向同步）
 
 上一版把「文档解析」页做成了只读文案「Token 只从本机 .secrets/mineru.json 读取（此处不显示状态与掩码）」，

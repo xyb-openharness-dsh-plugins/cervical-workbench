@@ -434,6 +434,53 @@ function lateCard(p) {
     <div class="actions"><button data-action="go-late">打开放疗与长期影响 →</button></div></div>`;
 }
 
+/* 36 号 §2.6 · 看板首卡状态卡四件：卡头 eyebrow / 派生天数 / 现状行 / 出口按钮排。
+   天数由锚点日（放疗首日或手术日 = Day 0）与当天日期计算，不手填；无锚点整卡显示「待初始化」。
+   出口主按钮进当前阶段核心页；副按钮打开疾病概要（与顶栏「?」同一个整页面板）。 */
+function isoDay(s) {
+  const m = String(s || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m ? Date.UTC(+m[1], +m[2] - 1, +m[3]) : null;
+}
+function dayDiff(from, to) {
+  const a = isoDay(from), b = isoDay(to);
+  return a === null || b === null ? null : Math.round((b - a) / 86400000);
+}
+/* 不用 data-primer-open：那个属性由 primer.js 接管，顶栏「?」会因此不被自动挂载（36 号 §3.2）。
+   模块未接入时不渲染，避免留一个点了没反应的按钮。 */
+function primerCta() {
+  if (typeof window === 'undefined' || !window.DiseasePrimer) return '';
+  return '<button class="soft" data-primer-cta aria-haspopup="dialog" aria-controls="disease-primer">疾病概要：宫颈癌是什么？</button>';
+}
+function statusCard(p) {
+  const today = new Date().toISOString().slice(0, 10);
+  const surgery = (p && p.surgery && p.surgery.rows && p.surgery.rows[0]) || null;
+  const rtRows = (p && p.rt && p.rt.rows) || [];
+  const ebrt = rtRows.find((r) => r[0] === 'EBRT') || rtRows[0] || null;
+  const anchor = surgery ? surgery[0] : (ebrt ? ebrt[1] : '');
+  const anchorLabel = surgery ? surgery[1] : (ebrt ? '根治性同步放化疗首日（EBRT 第 1 次）' : '');
+  const days = dayDiff(anchor, today);
+  if (days === null) {
+    return `<div class="stage-strip" data-status-card="uninitialized"><span class="eyebrow">D+N 状态卡</span>`
+      + `<span class="stage-now"><b>待初始化</b><small>未找到锚点日（放疗首日 / 手术日 = Day 0），天数不由本台手填。先去「我的分期」或「治疗历程」补日期；本台暂无独立三步向导。</small></span>`
+      + `<div class="actions"><button class="primary" data-action="go-stage">去补起始日期 →</button>${primerCta()}</div></div>`;
+  }
+  const next = (p.rhythm || [])[0] || null;
+  const nextTxt = next ? `下次：${next[3]}（${next[0]}）` : '下次：待预约';
+  const lines = p.lines || [];
+  const open = lines.find((l) => !l.done) || null;
+  const cur = open || lines[lines.length - 1] || null;
+  const curName = cur ? cur.name : '阶段未记录';
+  const curDetail = cur ? cur.detail : '';
+  const stateTxt = open ? '进行中' : '已结束 · 随访期';
+  const core = state.profile === 'B'
+    ? { act: 'go-review', text: '看复诊节奏 →' }
+    : { act: 'go-treatment', text: '看系统治疗周期 →' };
+  return `<div class="stage-strip" data-status-card="ready"><span class="eyebrow">D+${days} 状态卡 · 距${esc(next ? next[0] : '下一阶段')}</span>`
+    + `<span class="stage-day"><b>第 ${days} 天</b><small>锚点 ${esc(anchor)} ${esc(anchorLabel)}（Day 0）</small></span>`
+    + `<span class="stage-now"><b>${esc(curName)} · ${esc(stateTxt)}</b><small>${esc(curDetail)} · ${esc(nextTxt)} · 只引用医生记录与日期</small></span>`
+    + `<div class="actions"><button class="primary" data-action="${core.act}">${core.text}</button>${primerCta()}</div></div>`;
+}
+
 function vDashboard() {
   const p = P(), m = M();
   const cards = (DASH_KEYS[state.profile] || []).filter(k => m[k]).map(k => mcard(k, m[k])).join('');
@@ -441,6 +488,7 @@ function vDashboard() {
   const nextRhythm = p.rhythm[0];
   const isA = state.profile === 'A';
   return `${pageHead(false)}
+  ${statusCard(p)}
   <section class="hero">
     <div>
       <span class="eyebrow">演示档案 · ${esc(p.histology)}</span>
@@ -1254,6 +1302,7 @@ document.addEventListener('click', (e) => {
     'go-labs': () => { state.view = 'labs'; state.privateOpen = false; location.hash = 'labs'; render(); },
     'go-timeline': () => { state.view = 'timeline'; state.privateOpen = false; location.hash = 'timeline'; render(); },
     'go-stage': () => { state.view = 'stage'; state.privateOpen = false; location.hash = 'stage'; render(); },
+    'go-treatment': () => { state.view = 'treatment'; state.sub.treatment = 3; state.privateOpen = false; location.hash = 'treatment'; render(); },
     'go-trials': () => { state.view = 'trials'; state.privateOpen = false; location.hash = 'trials'; render(); },
     'go-records': () => { state.view = 'records'; state.privateOpen = false; location.hash = 'records'; render(); },
     'go-nutrition': () => { state.view = 'nutrition'; state.privateOpen = false; location.hash = 'nutrition'; render(); },
@@ -1352,6 +1401,13 @@ document.addEventListener('click', (e) => {
     return;
   }
   if (map[act]) map[act](e.target.closest('[data-action]'));
+});
+/* 36 号 §2.6 出口：状态卡副按钮打开疾病概要（与顶栏「?」同一个整页面板） */
+document.addEventListener('click', (e) => {
+  const cta = e.target.closest('[data-primer-cta]');
+  if (!cta) return;
+  e.preventDefault();
+  if (window.DiseasePrimer) window.DiseasePrimer.open(cta);
 });
 document.addEventListener('input', (e) => {
   if (e.target.matches('[data-action="records-search"]')) {

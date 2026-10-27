@@ -5,12 +5,14 @@
  *
  * 原件状态照实写：FIGO 2018 分期据项目 SPEC 与 USER-RESEARCH 转引；CSCO / NCCN 宫颈癌指南
  * 全文未核对（docs/USER-RESEARCH.md 原文），版本号不臆测；WHO 分类未取得原件。
+ * 2026-10-27（36 号 §2.5）：每条未取得原件的行都补了可点的二次来源；二次来源的性质写在 note/表内文字里，
+ * 不把「书目页 / 官网指南页」冒充全文。ClinicalTrials.gov 与国内登记平台的探测是本机快照，无公开 URL，标 nolink。
  */
 window.DISEASE_PRIMER = {
   brand: '小莲宝 CerviPal',
   name: '宫颈癌',
   en: 'Cervical Cancer',
-  updated: '2026-10-25',
+  updated: '2026-10-27',
   sections: [
     {
       id: 'definition',
@@ -24,8 +26,10 @@ window.DISEASE_PRIMER = {
         'HPV 筛查史在档案里单列：筛查史与发病不是因果关系，本台不做归因。'
       ],
       sources: [
-        { org: 'FIGO', doc: 'FIGO staging for carcinoma of the cervix uteri（2018 修订）', version: '2018', original: false, page: '页码待核' },
-        { org: 'WHO', doc: 'Classification of Tumours: Female Genital Tumours, 5th ed.', version: '版本未核实', original: false, page: '页码待核' }
+        { org: 'FIGO', doc: 'FIGO staging for carcinoma of the cervix uteri（2018 修订）', version: '2018', original: false, page: '页码待核',
+          secondaryUrl: 'https://www.cancer.gov/types/cervical/hp/cervical-treatment-pdq', note: '二次来源为 NCI PDQ 宫颈癌治疗（含 FIGO 分期说明）；FIGO 原文需出版方订阅' },
+        { org: 'WHO', doc: 'Classification of Tumours: Female Genital Tumours, 5th ed.', version: '版本未核实', original: false, page: '页码待核',
+          secondaryUrl: 'https://publications.iarc.fr/Book-And-Report-Series/Who-Classification-Of-Tumours/Female-Genital-Tumours-2020', note: 'IARC/WHO 官方书目页；全文需购买' }
       ]
     },
     {
@@ -36,10 +40,10 @@ window.DISEASE_PRIMER = {
       table: {
         head: ['机构', '文件', '版本 / 年份', '原件', '本台的用途'],
         rows: [
-          ['FIGO', 'FIGO staging for carcinoma of the cervix uteri', '2018 修订', '未取得原件（据项目 SPEC 与 USER-RESEARCH 转引）', '分期档案的期别结构（含 IIIC1/IIIC2、r/p 标记）'],
-          ['CSCO', 'CSCO 宫颈癌诊疗指南', '版本未核实', '未取得原件（全文未核对）', '国内治疗路径与药物可及性的对照；本版不作引用依据'],
-          ['NCCN', 'NCCN Guidelines · Cervical Cancer', '版本未核实', '未取得原件（全文未核对）', '国际路径结构的对照；本版不作引用依据'],
-          ['WHO', 'Classification of Tumours: Female Genital Tumours', '第 5 版（年份未核实）', '未取得原件', '病理类型命名口径']
+          ['FIGO', 'FIGO staging for carcinoma of the cervix uteri', '2018 修订', { text: '未取得原件，据 NCI PDQ 二次来源', url: 'https://www.cancer.gov/types/cervical/hp/cervical-treatment-pdq' }, '分期档案的期别结构（含 IIIC1/IIIC2、r/p 标记）'],
+          ['CSCO', 'CSCO 宫颈癌诊疗指南', '版本未核实', { text: '未取得原件，据出版方书目页', url: 'https://www.pmphmall.com/gdsdetail/660506-338835' }, '国内治疗路径与药物可及性的对照；本版不作引用依据'],
+          ['NCCN', 'NCCN Guidelines · Cervical Cancer', '版本未核实', { text: '未取得原件，据 NCCN 官网指南页', url: 'https://www.nccn.org/guidelines/guidelines-detail?category=1&id=1426' }, '国际路径结构的对照；本版不作引用依据'],
+          ['WHO', 'Classification of Tumours: Female Genital Tumours', '第 5 版（年份未核实）', { text: '未取得原件，据 IARC 官方书目页', url: 'https://publications.iarc.fr/Book-And-Report-Series/Who-Classification-Of-Tumours/Female-Genital-Tumours-2020' }, '病理类型命名口径']
         ]
       },
       points: [
@@ -48,9 +52,12 @@ window.DISEASE_PRIMER = {
         '本项目 2026-10-21 探测过国家药监局药物临床试验登记与信息公示平台（HTTP 202 挑战页）与 ChiCTR（HTTP 405），均判定不可采集；覆盖未知不等于没有登记。'
       ],
       sources: [
-        { org: 'FIGO', doc: 'FIGO staging for carcinoma of the cervix uteri', version: '2018 修订', original: false, page: '页码待核' },
-        { org: 'CSCO', doc: 'CSCO 宫颈癌诊疗指南', version: '版本未核实', original: false, page: '页码待核' },
-        { org: 'NCCN', doc: 'NCCN Guidelines · Cervical Cancer', version: '版本未核实', original: false, page: '页码待核' }
+        { org: 'FIGO', doc: 'FIGO staging for carcinoma of the cervix uteri', version: '2018 修订', original: false, page: '页码待核',
+          secondaryUrl: 'https://www.cancer.gov/types/cervical/hp/cervical-treatment-pdq', note: '据 NCI PDQ 宫颈癌治疗（含 FIGO 分期说明）' },
+        { org: 'CSCO', doc: 'CSCO 宫颈癌诊疗指南', version: '版本未核实', original: false, page: '页码待核',
+          secondaryUrl: 'https://www.pmphmall.com/gdsdetail/660506-338835', note: '出版方书目页（2026 版在售）；全文未核对，不据此引用' },
+        { org: 'NCCN', doc: 'NCCN Guidelines · Cervical Cancer', version: '版本未核实', original: false, page: '页码待核',
+          secondaryUrl: 'https://www.nccn.org/guidelines/guidelines-detail?category=1&id=1426', note: 'NCCN 官网指南页；下载全文需注册' }
       ]
     },
     {
@@ -95,8 +102,10 @@ window.DISEASE_PRIMER = {
         '以上是文献与指南里列出的手段，按病期与线序排列，不代表任何一项适合你。选哪一个，这一句需要问你的医生。'
       ],
       sources: [
-        { org: 'FIGO', doc: 'FIGO staging for carcinoma of the cervix uteri', version: '2018 修订', original: false, page: '页码待核' },
-        { org: 'CSCO', doc: 'CSCO 宫颈癌诊疗指南', version: '版本未核实', original: false, page: '页码待核' }
+        { org: 'FIGO', doc: 'FIGO staging for carcinoma of the cervix uteri', version: '2018 修订', original: false, page: '页码待核',
+          secondaryUrl: 'https://www.cancer.gov/types/cervical/hp/cervical-treatment-pdq', note: '据 NCI PDQ 宫颈癌治疗（含 FIGO 分期说明）' },
+        { org: 'CSCO', doc: 'CSCO 宫颈癌诊疗指南', version: '版本未核实', original: false, page: '页码待核',
+          secondaryUrl: 'https://www.pmphmall.com/gdsdetail/660506-338835', note: '出版方书目页（2026 版在售）；全文未核对，不据此引用' }
       ]
     },
     {
@@ -109,9 +118,10 @@ window.DISEASE_PRIMER = {
         '2026-10-21：国家药监局药物临床试验登记与信息公示平台返回 HTTP 202 挑战页、ChiCTR 返回 HTTP 405，两个渠道本轮判定不可采集，中国登记覆盖数未知；因此上面 158 条只代表 ClinicalTrials.gov 一个通道。'
       ],
       sources: [
-        { org: 'FIGO', doc: 'FIGO staging for carcinoma of the cervix uteri', version: '2018 修订', original: false, page: '页码待核' },
-        { org: 'ClinicalTrials.gov', doc: 'API v2 检索（query.cond=cervical cancer；StudyFirstPostDate 2026-01-01–2026-10-21）', version: '检索日 2026-10-21', original: true, note: '一手登记数据，本项目自采' },
-        { org: 'NMPA 药品审评中心 / ChiCTR', doc: '两个国内登记平台的采集探测记录', version: '探测日 2026-10-21', original: true, note: '只存判定，未复制站点内容' }
+        { org: 'FIGO', doc: 'FIGO staging for carcinoma of the cervix uteri', version: '2018 修订', original: false, page: '页码待核',
+          secondaryUrl: 'https://www.cancer.gov/types/cervical/hp/cervical-treatment-pdq', note: '据 NCI PDQ 宫颈癌治疗（含 FIGO 分期说明）' },
+        { org: 'ClinicalTrials.gov', doc: 'API v2 检索（query.cond=cervical cancer；StudyFirstPostDate 2026-01-01–2026-10-21）', version: '检索日 2026-10-21', original: true, nolink: true, note: '一手登记数据，本项目自采；快照存 research/cervical-cancer/raw-2026.json，无公开 URL' },
+        { org: 'NMPA 药品审评中心 / ChiCTR', doc: '两个国内登记平台的采集探测记录', version: '探测日 2026-10-21', original: true, nolink: true, note: '只存判定（HTTP 202 挑战页 / HTTP 405），未复制站点内容；探测记录存 research/cervical-cancer/cn-registry-attempt.json，无公开 URL' }
       ]
     }
   ]

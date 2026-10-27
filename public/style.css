@@ -483,3 +483,17 @@ dialog::backdrop{background:rgba(28,43,58,.36);backdrop-filter:blur(2px)}
 .mcard:focus-visible .mface{outline:3px solid var(--violet-deep);outline-offset:2px}
 .actions .hero-ai{display:inline-flex;align-items:center;gap:6px}
 .actions .hero-ai svg{width:15px;height:15px;flex:0 0 15px}
+
+/* 36 号 §2.6 · 看板首卡状态卡：卡头 eyebrow / 派生天数 / 现状行 / 出口按钮排。
+   颜色只走品牌令牌；29px 大字是天数，不给它加任何「严重程度」色。 */
+.stage-strip{display:flex;align-items:center;gap:14px;background:var(--violet-soft);border:1px solid var(--line);border-radius:13px;padding:13px 16px;margin-bottom:16px;flex-wrap:wrap}
+.stage-strip .eyebrow{flex:0 0 auto}
+.stage-strip b{font-size:13px;color:var(--violet-deep);font-weight:600;min-width:0;overflow-wrap:anywhere}
+.stage-strip small{margin-left:auto;flex:0 1 auto;min-width:0;overflow-wrap:anywhere}
+.stage-strip .stage-day{display:flex;flex-direction:column;gap:2px;min-width:0}
+.stage-strip .stage-day b{font-size:28px;line-height:1.05;color:var(--violet);font-weight:700}
+.stage-strip .stage-day small{margin-left:0;font-size:11px;color:var(--muted);flex:0 1 auto}
+.stage-strip .stage-now{display:flex;flex-direction:column;gap:2px;flex:1 1 260px;min-width:0}
+.stage-strip .stage-now small{margin-left:0;font-size:11px;color:var(--ink-2);flex:0 1 auto}
+.stage-strip .actions{margin-left:auto;flex:0 1 auto;display:flex;gap:8px;flex-wrap:wrap}
+.stage-strip .actions .soft{white-space:normal;text-align:left}
