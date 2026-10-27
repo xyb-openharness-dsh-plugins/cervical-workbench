@@ -70,11 +70,32 @@ try {
   if (!profiles.length) throw new Error('bootstrap 里没有档案（演示数据没播进去）');
   notes.push(`✓ bootstrap · 档案 ${profiles.join('/')} · 试验 ${(boot.trials || []).length} 条 · layout ${boot.layout ? '有' : '无'}`);
 
-  for (const p of ['index.html', 'app.js', 'style.css', 'demo-data.js']) {
-    const r = await fetch(`${base}/api/cervical/ui/${p}`);
-    if (r.status !== 200) throw new Error(`静态文件 ${p}：HTTP ${r.status}`);
+  /* 36 号：primer 三件套必须真的进包。v0.1.1 的 public/ 只有四件，
+     装上去顶栏根本没有「?」——而四个静态文件全是 200，旧断言照样报绿（2026-10-27 实测漏检）。
+     只查状态码不够：`dsh/server.js` 对未知路径会回落到 index.html 并照样 200（第 103 行），
+     所以必须查内容——非 index 的静态文件一律不许是那段 HTML 兜底。 */
+  const staticFiles = [
+    ['index.html', '<html'],
+    ['app.js', null], ['style.css', null], ['demo-data.js', null],
+    ['primer.js', 'DiseasePrimer'], ['primer.css', '.dp-panel'], ['primer-data.js', 'DISEASE_PRIMER']
+  ]
+  for (const [p, signature] of staticFiles) {
+    const r = await fetch(`${base}/api/cervical/ui/${p}`)
+    if (r.status !== 200) throw new Error(`静态文件 ${p}：HTTP ${r.status}（36 号：primer 三件套缺一个，顶栏就没有「?」）`)
+    const body = await r.text()
+    if (!body.length) throw new Error(`静态文件 ${p} 是空的`)
+    if (p !== 'index.html' && /^\s*<!doctype html/i.test(body)) {
+      throw new Error(`静态文件 ${p} 实际拿到的是 index.html 的兜底（该文件没进包）`)
+    }
+    if (signature && !body.includes(signature)) {
+      throw new Error(`静态文件 ${p} 里找不到 ${signature}——内容不对，不是 36 号那一版`)
+    }
   }
-  notes.push('✓ 静态四件 · 200');
+  const uiHtml = await (await fetch(`${base}/api/cervical/ui/index.html`)).text()
+  for (const need of ['primer-data.js', 'primer.js', 'primer.css']) {
+    if (!uiHtml.includes(need)) throw new Error(`index.html 没引用 ${need}——预览能开但没有「?」入口`)
+  }
+  notes.push(`✓ 静态七件 · 200 且内容对（含 primer 三件套，index.html 三处引用齐）`);
 
   const md = await (await fetch(`${base}/api/cervical/export/A.md`)).text();
   if (!/## 最近几次的变化/.test(md)) throw new Error('导出里没有「最近几次的变化」——装的是旧包');
