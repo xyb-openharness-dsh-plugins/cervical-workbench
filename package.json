@@ -1,6 +1,6 @@
 {
   "name": "@xyb-community/cervical-workbench",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "本机优先的宫颈癌FIGO分期、生育保留、根治性放化疗与长期副作用、复诊准备工作台",
   "private": true,
   "type": "module",
