@@ -1,3 +1,12 @@
+## 0.1.6 — 2026-11-13
+
+三缺口批量补齐（AC 型）：
+
+- **A 资料目录**：面板顶栏新增「配置目录」→ `uiWorkspace.pickDirectory()` → 口径硬拒（主目录本身/桌面/下载根/tmp，客户端 + 服务端 `checkDataDir` 双判）→ `POST /api/cervical/root` 落盘回显；`cordis.patch.yml` 补 `config.root: !!js dshHomePath('cervical-workbench')`；`Workbench.setDataRoot` 复用静态 `open()` 的校验与迁移，失败保留原库。
+- **C 新建患者**：`Workbench.createSubject/deleteSubject`（`is_demo=0`、`local-<时间戳>` 键、demo 不可删）+ 路由 `GET/POST/DELETE /api/cervical/subjects`；档案弹窗加「＋ 新建我的档案」，建完自动切过去（空记录起步）。
+- **parity 纪律**：新增的 `dlgNewProfile/saveNewProfile` 同时加进 `prototypes/v0.2/app.js`——该仓有「开发版函数集 ⊆ 原型函数集」的测试，只在 public 侧加会红（正是它要防的"偷偷另写一套视图"）。
+- 校验：三闸门全绿；`npm run check` 全绿；`npm test` 通过；版本四处同步 0.1.6。
+
 ## 0.1.5（2026-11-11，AI 对话面板激活修复）
 
 - 会话判定改用宿主归属 `ownedSession()`（`ownsSession(currentSession())`），不再用 `Boolean(conversation)`（customFrame 下没会话也会传隐藏容器 → 判断恒为真 → 点了没反应）。

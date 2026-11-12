@@ -1146,10 +1146,47 @@ function openDialog(eyebrow, title, body, foot = '') {
 const closeDialog = () => $('#dialog').close();
 
 function dlgProfiles() {
-  openDialog('小莲宝', '切换演示档案', Object.entries(PROFILES).map(([k, p]) => `
+  openDialog('小莲宝', '切换档案', Object.entries(PROFILES).map(([k, p]) => `
     <button class="profile-row ${state.profile === k ? 'on' : ''}" data-pick-profile="${k}">
-      <div><b>${esc(p.name)}的资料</b><p>${esc(p.meta)} · ${esc(p.headline)}</p></div><span class="profile-caret">${state.profile === k ? '当前' : '切换'}</span></button>`).join(''),
+      <div><b>${esc(p.name)}的资料</b><p>${esc(p.meta)} · ${esc(p.headline)}${p.isDemo === false ? ' · 我建的' : ''}</p></div><span class="profile-caret">${state.profile === k ? '当前' : '切换'}</span></button>`).join('') +
+    '<button class="profile-row" data-action="new-profile"><div><b>＋ 新建我的档案</b><p>演示档案不会被改动；新档案存本机数据库，从空记录开始</p></div><span class="profile-caret">新建</span></button>',
     '<button data-action="close">取消</button>');
+}
+
+function dlgNewProfile() {
+  openDialog('小莲宝', '新建我的档案',
+    `<p class="muted">只填名字（可以是昵称）。新档案保存在本机数据库，演示档案不受影响。</p>
+     <label class="field">档案名<input id="np-name" maxlength="40" placeholder="例：我自己 / 妈妈"></label>
+     <label class="field">一句话说明（可选）<input id="np-meta" maxlength="40" placeholder="例：确诊 2025-03 · 随访中"></label>
+     <p id="np-err" class="muted" style="color:#a33" hidden></p>`,
+    '<button class="primary" data-action="save-new-profile">保存并切换</button><button data-action="close">取消</button>');
+}
+
+function saveNewProfile() {
+  const nameEl = $('#np-name'); const metaEl = $('#np-meta'); const errEl = $('#np-err');
+  const name = (nameEl && nameEl.value || '').trim();
+  const meta = (metaEl && metaEl.value || '').trim();
+  if (!name) { if (errEl) { errEl.hidden = false; errEl.textContent = '请填写档案名。'; } return; }
+  fetch(`${apiBase()}/api/cervical/subjects`, {
+    method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ name, meta }),
+  }).then((r) => r.json().then((d) => ({ ok: r.ok, data: d }))).then((res) => {
+    if (!res.ok) throw new Error(res.data.message || res.data.error || '新建失败');
+    const slug = res.data.profileKey;
+    const proto = PROFILES[Object.keys(PROFILES)[0]] || {};
+    const made = {};
+    Object.keys(proto).forEach((k) => {
+      if (k === 'id' || k === 'name') return;
+      const v = proto[k];
+      made[k] = Array.isArray(v) ? [] : (v && typeof v === 'object' ? {} : (typeof v === 'number' ? 0 : ''));
+    });
+    made.id = slug; made.name = name; made.isDemo = false;
+    if (meta) made.tag = meta;
+    PROFILES[slug] = made;
+    state.profile = slug;
+    closeDialog(); render();
+    toast('已新建并切换到「' + name + '」；演示档案没有被改动');
+  }).catch((e) => { if (errEl) { errEl.hidden = false; errEl.textContent = '新建失败：' + (e.message || e); } });
 }
 /* ---- 文档解析设置：Token 状态与手工保存 ----
    状态只显示掩码与文件路径，原文不回显（服务端也不返回）。
@@ -1297,6 +1334,7 @@ document.addEventListener('click', (e) => {
   if (!act) return;
   const map = {
     profiles: dlgProfiles, settings: dlgSettings, about: dlgAbout, help: dlgHelp,
+    'new-profile': dlgNewProfile, 'save-new-profile': saveNewProfile,
     close: closeDialog, 'open-store': () => toast('资料目录已激活（演示）'),
     'go-review': () => { state.view = 'review'; state.privateOpen = false; location.hash = 'review'; render(); },
     'go-labs': () => { state.view = 'labs'; state.privateOpen = false; location.hash = 'labs'; render(); },

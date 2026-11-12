@@ -1,3 +1,5 @@
 - insert:
     - id: cervical-main
       name: "@xyb-community/cervical-workbench"
+      config:
+        root: !!js dshHomePath('cervical-workbench')
